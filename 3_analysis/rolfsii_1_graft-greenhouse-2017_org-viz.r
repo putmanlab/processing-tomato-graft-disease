@@ -12,6 +12,9 @@ library(readr)
 library(stringr)
 library(tidyr)
 
+install.packages("ggalluvial")
+library(ggalluvial)
+
 setwd("/home/tomato_graft_rolfsii")
 
 ######################
@@ -38,6 +41,26 @@ setwd("/home/tomato_graft_rolfsii")
 ### export final QC'd data	
 	write_csv(e1r1.dis, path="./2_data_curated/rolfsii_1_graft-greenhouse-2017_disease-serverity_final.csv", na=".", col_names=T, append=F)
 
+### summarize for alluvial diagram	
+	## create data frame to be filled with rows for each disease rating at each combination of other column levels
+		# get levels from dataframe
+		df.levels = e1r1.dis %>% group_by(cultivar, graft, inoculum, date, days_after_plant) %>% summarize(ct=n()) %>% select(-ct) %>% ungroup()
+	
+		# make vector of disease severity
+		vec.sev = c(0:8)
+		
+		# cross
+		df.blank = crossing(df.levels, vec.sev) %>% rename(disease_severity=vec.sev)
+		
+	## count number of plants observed for each severity rating
+	e1r1.dis.temp = e1r1.dis %>% group_by(cultivar, graft, inoculum, date, days_after_plant, disease_severity) %>% summarize(numb_plants=n()) %>% ungroup()
+
+	## join
+	e1r1.dis.ct = df.blank %>% left_join(e1r1.dis.temp, by=c("cultivar" = "cultivar", "graft" = "graft", "inoculum" = "inoculum", "date" = "date", "days_after_plant" = "days_after_plant", "disease_severity" = "disease_severity"))
+	
+	## fill NAs with 0s
+	e1r1.dis.ct = e1r1.dis.ct %>% mutate(numb_plants=replace(numb_plants, is.na(numb_plants), 0))
+
 
 ###########
 # B. Plot #
@@ -56,3 +79,23 @@ setwd("/home/tomato_graft_rolfsii")
 		theme(legend.position="bottom", legend.title=element_text(size=14), legend.text=element_text(size=12)) +
 		labs(y="Southern blight severity (0-8)", x="Date", color="Graft", linetype="Graft")
 	ggsave(file="./4_results/rolfsii_1_graft-greenhouse-2017_severity.png", device="png", plot=plot.dis.score, width=8, height=6.5, units="in")
+	
+	## number of plants with each rating - stacked bar
+	plot.severity.stack = e1r1.dis %>% filter(!disease_severity %in% c(0,NA)) %>% {
+	ggplot(., aes(x=graft)) +
+		geom_bar(aes(fill=as.character(disease_severity)), stat="count") +
+		facet_grid(inoculum ~ cultivar + as.character(date)) +
+		scale_fill_brewer(palette="YlOrRd") +
+		theme_bw() +
+		theme(legend.position="bottom")
+	}
+    ggplot2::ggsave(file="./4_results/rolfsii_1_graft-gh-2017_severity_bar.png", device="png", plot=plot.severity.stack, width=12, height=8, units="in")
+	
+	## number of plants with each rating - alluvial
+	plot.sev.alluv = ggplot(e1r1.dis.ct, aes(x=date, y=numb_plants, alluvium=as.character(disease_severity))) +
+		geom_alluvium(aes(fill=as.character(disease_severity))) +
+		facet_grid(inoculum ~ cultivar + graft) +
+		scale_fill_brewer(palette="YlOrRd") +
+		theme_bw() +
+		theme(legend.position="bottom")
+    ggplot2::ggsave(file="./4_results/rolfsii_1_graft-gh-2017_severity_alluvium.png", device="png", plot=plot.sev.alluv, width=12, height=8, units="in")
