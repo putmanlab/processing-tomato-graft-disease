@@ -95,34 +95,38 @@ setwd(directory)
 # B. Visualize #
 ################
 
-### line graph - separate facets (FOR PAPER)
-	plot.e3.line.r1 = data.e3 %>% filter(exp_rep == "2018") %>% {
-	ggplot(data=., aes(x=days_after_plant, y=disease_severity, color=graft, linetype=graft, group=interaction(cultivar, graft, inoculum, block))) +
-		geom_line(size=0.25, position=position_jitter(w=0.1, h=0.1)) +
+### number of plants with each rating - stacked bar (FOR PAPER)
+	plot.e3.bar.r1 = data.e3 %>% filter(exp_rep == "2018") %>% {
+	ggplot(., aes(x=as.character(days_after_plant))) +
+		geom_bar(aes(fill=as.character(disease_severity)), stat="count") +
 		facet_grid(graft ~ cultivar + inoculum, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-		scale_x_continuous(limits=c(0,155)) +
+		scale_x_discrete(limits=c("18","99","105","113","120","127","133","154")) +
+		scale_y_continuous(limits=c(0,8)) +
+		scale_fill_brewer(palette="YlOrRd") +
 		theme_bw() +
-		theme(axis.title.y=element_text(color=NA, margin=margin(0,5,0,0)), strip.text=element_text(size=10)) +
-		theme(axis.title.x=element_blank(), axis.text.x=element_blank(), legend.position="none") +
-		theme(aspect.ratio=0.6, plot.margin=margin(2.5,5.5,0,5.5), panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +	
-		labs(x="Days After Planting", y="Disease Severity 0-7", color="Graft", linetype="Graft")
+		theme(axis.title.y=element_text(color=NA, margin=margin(0,5,0,0)), axis.text.y=element_text(size=10), strip.text=element_text(size=10)) +
+		theme(axis.title.x=element_blank(), axis.text.x=element_text(size=9, angle=90, vjust=0.5), legend.position="none") +
+		theme(aspect.ratio=0.6, plot.margin=margin(10,5.5,0,5.5), panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +	
+		labs(x="Days after transplant", y="Number of replicate plants", fill="Southern blight severity (0–7)")
 	}
 	
-	plot.e3.line.r2 = data.e3 %>% filter(exp_rep == "2019") %>% {
-	ggplot(data=., aes(x=days_after_plant, y=disease_severity, color=graft, linetype=graft, group=interaction(cultivar, graft, inoculum, block))) +
-		geom_line(size=0.25, position=position_jitter(w=0.1, h=0.1)) +
+	plot.e3.bar.r2 = data.e3 %>% filter(exp_rep == "2019") %>% {
+	ggplot(., aes(x=as.character(days_after_plant))) +
+		geom_bar(aes(fill=as.character(disease_severity)), stat="count") +
 		facet_grid(graft ~ cultivar + inoculum, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-		scale_x_continuous(limits=c(0,155)) +
+		scale_x_discrete(limits=c("8","14","49","55","63","70","76","83")) +
+		scale_fill_brewer(palette="YlOrRd") +
 		theme_bw() +
-		theme(axis.text=element_text(size=10), axis.title=element_text(size=11), strip.text.y=element_text(size=10)) +
-		theme(axis.title.y=element_text(margin=margin(0,5,0,0), hjust=1.75), axis.title.x=element_text(margin=margin(5,0,0,0))) +
+		theme(axis.text.y=element_text(size=10), axis.text.x=element_text(size=9, angle=90, vjust=0.5), axis.title=element_text(size=11), strip.text.y=element_text(size=10)) +
+		theme(axis.title.y=element_text(margin=margin(0,5,0,0), hjust=2.25), axis.title.x=element_text(margin=margin(5,0,0,0))) +
 		theme(legend.text=element_text(size=11), legend.title=element_text(size=10), legend.position="bottom", legend.margin=margin(-5,0,0,0)) +
 		theme(strip.text.x=element_blank()) +
-		theme(aspect.ratio=0.6, plot.margin=margin(0,5.5,5.5,5.5), panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +		
-		labs(x="Days After Planting", y="Disease Severity 0-7", color="Graft", linetype="Graft")
+		guides(fill=guide_legend(nrow=1)) +
+		theme(aspect.ratio=0.6, plot.margin=margin(2.5,5.5,0,5.5), panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +	
+		labs(x="Days after transplant", y="Number of replicate plants", fill="Southern blight severity (0–7)")
 	}
 
-	plot.e3.line.fac = plot_grid(plot.e3.line.r1, plot.e3.line.r2, ncol=1, labels=c("2018","2019"), vjust=c(1.5,0), hjust=-1)
+	plot.e3.bar = plot_grid(plot.e3.bar.r1, plot.e3.bar.r2, ncol=1, labels=c("2018","2019"), vjust=c(1.5,1), hjust=-1)
 		
-	cowplot::ggsave(file="./4_results/rolfsii_3_graft-greenhouse_severity_line_faceted.png", device="png", plot=plot.e3.line.fac, width=6.5, height=7.25, units="in")
+	cowplot::ggsave(file="./4_results/rolfsii_3_graft-gh_severity_bar.png", device="png", plot=plot.e3.bar, width=6.5, height=7.5, units="in")
 		
