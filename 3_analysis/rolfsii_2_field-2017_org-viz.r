@@ -177,77 +177,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	e2.incid.s = e2.incid.s %>% summarize(raudps=audps(perc_incid, days_after_plant, type="relative")) %>% ungroup()
 	
 	## convert and round
-	e2.incid.s = e2.incid.s %>% mutate(radups=round((raudps * 100), digits=0))
-	
-
-### organize df for audps function
-	## convert to wide
-		# remove columns not needed/will conflict in spread operation
-		e2.incid.w = e2.incid.f %>% select(-date, -disease_incidence, -n_plants)
-		
-		# convert to integer
-		e2.incid.w = e2.incid.w %>% mutate(perc_incid=as.integer(perc_incid))
-		
-		# spread
-		e2.incid.w = e2.incid.w %>% spread(key=days_after_plant, value=perc_incid)
-
-		# rename columns
-		e2.incid.w = e2.incid.w %>% rename(dap_64=`64`, dap_70=`70`, dap_77=`77`, dap_84=`84`, dap_91=`91`)
-
-###	define custom wrapper for audps
-	# https://stackoverflow.com/questions/48062213/dplyr-using-column-names-as-function-arguments
-
-#	# define vars for testing
-	df.in=e2.incid.w %>% arrange(cultivar, graft, block, subplot) %>% slice(5)
-	data_cols=c("dap_64", "dap_70", "dap_77", "dap_84", "dap_91")
-	timepoints=c(64,70,77,84,91)
-	calc_type="relative"
-
-#	audps_wrap <- function(df.in, data_cols, timepoints, calc_type=NULL) {
-		# "quosure" vector of column names so it can be used in select statement
-		data_cols_quote = enquo(data_cols)
-		
-		# get vector of data
-		data_vector = df.in %>% select(!!data_cols_quote) %>% c(., recursive=TRUE) %>% unname
-
-		# calculate AUDPS
-		result <- audps(data_vector, timepoints, type=calc_type) %>% unname
-		
-		# convert to %
-		result <- round((result * 100), digits=0)
-		result
-		return(result)
-	}
-	
-#	audps_wrap = Vectorize(audps_wrap)
-	
-	temp.df %>% audps_wrap(df.in=., data_cols=c("dap_64", "dap_70", "dap_77", "dap_84", "dap_91"), timepoints=c(64,70,77,84,91), calc_type="relative")
-		
-	## function testing#	
-#
-#		# test selecting columns with variable
-#		t1 = df.in %>% select(dap_64, dap_70, dap_77, dap_84, dap_91) %>% c(., recursive=TRUE) %>% unname
-#
-#		data_cols_quo=enquo(data_cols)
-#		t2 = df.in %>% select(!!data_cols_quo) %>% c(., recursive=TRUE) %>% unname
-#
-#		typeof(t1)
-#		typeof(t2)
-#		class(t1)
-#		class(t2)
-#		sapply(t1, class)
-#		sapply(t2, class)
-#		attributes(t1)
-#		attributes(t2)
-#		names(t1)
-#		names(t2)
-
-	audps_wrap(df.in=df.in, data_cols=data_cols, timepoints=timepoints, calc_type=calc_type)
-
-### calculate
-	e2.incid.w.t = e2.incid.w %>% 
-		#rowwise() %>% 
-		mutate(raudps=audps_wrap(df.in=., data_cols=c("dap_64", "dap_70", "dap_77", "dap_84", "dap_91"), timepoints=c(64,70,77,84,91), calc_type="relative"))
+	e2.incid.s = e2.incid.s %>% mutate(raudps=round((raudps * 100), digits=0))
 	
 
 ###########
@@ -266,6 +196,14 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 		theme(legend.position="bottom") +
 		labs(y="Southern blight strikes (%)", x="Date", color="Graft", linetype="Graft")
 	ggsave(file=paste(directory, "/4_results/rolfsii_2_field-2017_incid_line.png", sep=""), device="png", plot=plot.e2.incid, width=6, height=5, units="in")
+
+### audps - cultivar + graft
+	plot.e2.audps = ggplot(e2.incid.s, aes(y=raudps, x=graft)) +
+		geom_point(shape=1, position=position_jitter(w=0.1)) +
+		facet_grid(. ~ cultivar) +
+		theme_bw()
+	ggplot2::ggsave(file="./4_results/rolfsii_2_field-2017_audps_point.png", device="png", plot=plot.e2.audps, width=6, height=5, units="in")
+	
 
 ### yield - graft (FOR PAPER)
 	plot.e2.yld.dot = ggplot(e2.yld, aes(y=yield_mt_ha, x=graft)) +
