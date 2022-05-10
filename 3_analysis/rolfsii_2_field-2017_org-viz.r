@@ -12,6 +12,9 @@ library(readr)
 library(stringr)
 library(tidyr)
 
+install.packages("agricolae", dependencies=c("Depends","Imports"))
+library(agricolae)
+
 directory="/home/tomato_graft_rolfsii"
 setwd(directory)
 
@@ -161,6 +164,91 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	# export
 	write_csv(e2.summ.subplot, path="./4_results/rolfsii_2_field-2017_incidence_summ-table_SB_cultivar-graft_min-max.csv", na="NA", append=F, col_names=T)
 
+
+########################
+# D. Summarize - AUDPS #
+########################
+
+### calculate AUDPS
+	## arrange and group by
+	e2.incid.s = e2.incid.f %>% arrange(cultivar, graft, block, subplot, date) %>% group_by(cultivar, graft, block, subplot)
+
+	## calculate
+	e2.incid.s = e2.incid.s %>% summarize(raudps=audps(perc_incid, days_after_plant, type="relative")) %>% ungroup()
+	
+	## convert and round
+	e2.incid.s = e2.incid.s %>% mutate(radups=round((raudps * 100), digits=0))
+	
+
+### organize df for audps function
+	## convert to wide
+		# remove columns not needed/will conflict in spread operation
+		e2.incid.w = e2.incid.f %>% select(-date, -disease_incidence, -n_plants)
+		
+		# convert to integer
+		e2.incid.w = e2.incid.w %>% mutate(perc_incid=as.integer(perc_incid))
+		
+		# spread
+		e2.incid.w = e2.incid.w %>% spread(key=days_after_plant, value=perc_incid)
+
+		# rename columns
+		e2.incid.w = e2.incid.w %>% rename(dap_64=`64`, dap_70=`70`, dap_77=`77`, dap_84=`84`, dap_91=`91`)
+
+###	define custom wrapper for audps
+	# https://stackoverflow.com/questions/48062213/dplyr-using-column-names-as-function-arguments
+
+#	# define vars for testing
+	df.in=e2.incid.w %>% arrange(cultivar, graft, block, subplot) %>% slice(5)
+	data_cols=c("dap_64", "dap_70", "dap_77", "dap_84", "dap_91")
+	timepoints=c(64,70,77,84,91)
+	calc_type="relative"
+
+#	audps_wrap <- function(df.in, data_cols, timepoints, calc_type=NULL) {
+		# "quosure" vector of column names so it can be used in select statement
+		data_cols_quote = enquo(data_cols)
+		
+		# get vector of data
+		data_vector = df.in %>% select(!!data_cols_quote) %>% c(., recursive=TRUE) %>% unname
+
+		# calculate AUDPS
+		result <- audps(data_vector, timepoints, type=calc_type) %>% unname
+		
+		# convert to %
+		result <- round((result * 100), digits=0)
+		result
+		return(result)
+	}
+	
+#	audps_wrap = Vectorize(audps_wrap)
+	
+	temp.df %>% audps_wrap(df.in=., data_cols=c("dap_64", "dap_70", "dap_77", "dap_84", "dap_91"), timepoints=c(64,70,77,84,91), calc_type="relative")
+		
+	## function testing#	
+#
+#		# test selecting columns with variable
+#		t1 = df.in %>% select(dap_64, dap_70, dap_77, dap_84, dap_91) %>% c(., recursive=TRUE) %>% unname
+#
+#		data_cols_quo=enquo(data_cols)
+#		t2 = df.in %>% select(!!data_cols_quo) %>% c(., recursive=TRUE) %>% unname
+#
+#		typeof(t1)
+#		typeof(t2)
+#		class(t1)
+#		class(t2)
+#		sapply(t1, class)
+#		sapply(t2, class)
+#		attributes(t1)
+#		attributes(t2)
+#		names(t1)
+#		names(t2)
+
+	audps_wrap(df.in=df.in, data_cols=data_cols, timepoints=timepoints, calc_type=calc_type)
+
+### calculate
+	e2.incid.w.t = e2.incid.w %>% 
+		#rowwise() %>% 
+		mutate(raudps=audps_wrap(df.in=., data_cols=c("dap_64", "dap_70", "dap_77", "dap_84", "dap_91"), timepoints=c(64,70,77,84,91), calc_type="relative"))
+	
 
 ###########
 # D. Plot #
