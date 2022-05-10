@@ -164,6 +164,10 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	# export
 	write_csv(e2.summ.subplot, path="./4_results/rolfsii_2_field-2017_incidence_summ-table_SB_cultivar-graft_min-max.csv", na="NA", append=F, col_names=T)
 
+### graft-cultivar - rating date (for figure)
+	## summarize
+	e2.summ.incid.fig = e2.incid.f %>% group_by(cultivar, graft, date) %>% summarize(incid_mean=round(mean(perc_incid, na.rm=T), digits=1)) %>% ungroup()
+
 
 ########################
 # D. Summarize - AUDPS #
@@ -179,30 +183,45 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	## convert and round
 	e2.incid.s = e2.incid.s %>% mutate(raudps=round((raudps * 100), digits=0))
 	
-
+### summarize graft-cultivar (for figure)
+	## summarize
+	e2.summ.audps.fig = e2.incid.s %>% group_by(cultivar, graft) %>% summarize(raudps_mean=round(mean(raudps, na.rm=T), digits=1)) %>% ungroup()
+	
+	
 ###########
 # D. Plot #
 ###########
 
-### incidence - cultivar + graft (FOR PAPER)
-	plot.e2.incid = ggplot(e2.incid.f, aes(y=disease_incidence, x=date, group=interaction(block, subplot, graft), color=graft, linetype=graft)) +
-		geom_line(size=0.3, position=position_jitter(w=0.2, h=0.2)) +
-		facet_grid(cultivar ~ ., labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
+### disease - incidence + audps combined
+	## incidence - cultivar + graft
+	plot.e2.incid = ggplot(e2.incid.f, aes(color=graft, linetype=graft)) +
+		geom_line(aes(y=disease_incidence, x=date, group=interaction(block, subplot, graft)), size=0.3, alpha=0.5, position=position_jitter(w=0.2, h=0.2)) +
+		geom_line(data=e2.summ.incid.fig, aes(x=date, y=incid_mean), size=1.75) +
+		facet_grid(cultivar ~ .) +
 		scale_color_discrete(labels=c("Maxifort","none")) + 
 		scale_linetype_discrete(labels=c("Maxifort","none")) + 
 		theme_bw() +
 		theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
 		theme(axis.title=element_text(size=12), axis.text=element_text(size=10)) +
-		theme(legend.position="bottom") +
+		theme(strip.text=element_blank(), strip.background=element_blank()) +
+		theme(legend.position=c(0.22, 0.92)) +
+		guides(color=guide_legend(nrow=1), linetype=guide_legend(nrow=1)) +
 		labs(y="Southern blight strikes (%)", x="Date", color="Graft", linetype="Graft")
-	ggsave(file=paste(directory, "/4_results/rolfsii_2_field-2017_incid_line.png", sep=""), device="png", plot=plot.e2.incid, width=6, height=5, units="in")
 
 ### audps - cultivar + graft
 	plot.e2.audps = ggplot(e2.incid.s, aes(y=raudps, x=graft)) +
-		geom_point(shape=1, position=position_jitter(w=0.1)) +
-		facet_grid(. ~ cultivar) +
-		theme_bw()
-	ggplot2::ggsave(file="./4_results/rolfsii_2_field-2017_audps_point.png", device="png", plot=plot.e2.audps, width=6, height=5, units="in")
+		geom_dotplot(binaxis="y", binwidth=2, dotsize=0.75, stackdir="center", stackratio=1.25) +
+		geom_text(data=e2.summ.audps.fig, aes(x=graft, y=raudps_mean, label=raudps_mean), hjust=-0.75) +
+		facet_grid(cultivar ~ ., labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
+		scale_x_discrete(labels=c("Maxifort","none")) + 
+		stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
+		theme_bw() +
+		theme(axis.title=element_text(size=12), axis.text=element_text(size=10)) +
+		labs(y="Relative area under disease progress stairs (% strikes)", x="Graft")
+
+	plot.e2.comb = ggarrange(plot.e2.incid, plot.e2.audps, widths=c(3.5,1.5))
+	
+	ggplot2::ggsave(file="./4_results/rolfsii_2_field-2017_disease_incid-audps.png", device="png", plot=plot.e2.comb, width=6.5, height=5, units="in")
 	
 
 ### yield - graft (FOR PAPER)
