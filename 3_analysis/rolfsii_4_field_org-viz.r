@@ -12,9 +12,18 @@ library(readr)
 library(stringr)
 library(tidyr)
 library(cowplot)
+library(egg)
+
+#install.packages("agricolae", dependencies=c("Depends","Imports"))
+#library(agricolae)
+
+devtools::install_github("AlvesKS/epifitter", ref="00af96a")
+library(epifitter)
 
 directory="/home/tomato_graft_rolfsii"
 setwd(directory)
+
+options(pillar.sigfig=4)
 
 ####################
 # A. Import - 2018 #
@@ -62,6 +71,7 @@ setwd(directory)
 		
 		# remove old date column, reorder columns, rename old date column
 		e4r1.dat = e4r1.dat %>% select(cultivar, graft, treatment, block, plot_num, plant, date_act, rating) %>% rename("date"=date_act)
+
 
 ####################
 # B. Import - 2019 #
@@ -425,63 +435,38 @@ setwd(directory)
 	## export
 	write_csv(e4.summ.sb.graft.d127, path="./4_results/rolfsii_4_field_incidence_summ-table_SB_graft_d127_overall-mean.csv", na="NA", append=F, col_names=T)
 	write_csv(e4.summ.ct.graft.d17, path="./4_results/rolfsii_4_field_incidence_summ-table_CT_graft_d17_overall-mean.csv", na="NA", append=F, col_names=T)
+
+
+########################
+# F. Summarize - AUDPS #
+########################
+
+### calculate AUDPS
+	## remove last rating date for 2018 per above 
+	e4.summ.audps = e4.summ.plot %>% filter(date != as_date("2018-08-10")) 	
+
+	## arrange and group by	
+	e4.summ.audps = e4.summ.audps %>% arrange(exp_rep, cultivar, graft, block, rating, date) %>% group_by(exp_rep, cultivar, graft, block, rating) 
+
+	## calculate
+#	e4.summ.audps = e4.summ.audps %>% summarize(raudps=audps(perc_incid, days_after_plant, type="relative")) %>% ungroup()
+	e4.summ.audps = e4.summ.audps %>% summarize(raudps=AUDPS(y=perc_incid, time=days_after_plant, type="relative", y_proportion=FALSE)) %>% ungroup()
+		
+	## convert and round
+	e4.summ.audps = e4.summ.audps %>% mutate(raudps=round((raudps * 100), digits=2))
 	
+### summarize graft-cultivar (for figure)
+	## summarize
+	e4.summ.audps.fig = e4.summ.audps %>% group_by(exp_rep, cultivar, graft, rating) %>% summarize(raudps_mean=round(mean(raudps, na.rm=T), digits=1)) %>% ungroup()
+
+### check using IdeTo spreadsheet
+	e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% arrange(exp_rep, cultivar, graft, block, date) %>% print(n=70)
+	e4.summ.audps %>% filter(rating == "SB_T") %>% arrange(exp_rep, cultivar, graft, block)
+
 
 ################
-# F. Visualize #
+# G. Visualize #
 ################	
-
-### all ratings; exclude NA "rating", "H_H"; exclude last rating date for 2018
-	plot.e4.incid.perc.r1 = e4.summ.plot %>% filter(exp_rep == "2018" & !rating %in% c("H_H","z_ct_na") & date != as_date("2018-08-10")) %>% {
-		ggplot(., aes(x=date, y=perc_incid, color=graft, linetype=cultivar, group=interaction(block, graft, cultivar))) +
-			geom_line(size=0.3) +
-			facet_wrap(~rating, ncol=3) +
-			scale_y_continuous(limits=c(0,69)) +
-			scale_x_date(limits=as_date(c("2018-05-11","2018-08-08")), date_breaks="1 month", date_labels="%b %d") +
-			theme_bw() +
-			theme(axis.text=element_text(size=12), legend.text=element_text(size=12)) +
-			theme(legend.position="none") +
-			theme(plot.margin=margin(5.5,0,5.5,5.5), panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-			labs(x="Date", y="Incidence (%)", color="Graft", linetype="Cultivar")
-		}
-	plot.e4.incid.perc.r2 = e4.summ.plot %>% filter(exp_rep == "2019" & !rating %in% c("H_H","z_ct_na")) %>% {
-		ggplot(., aes(x=date, y=perc_incid, color=graft, linetype=cultivar, group=interaction(block, graft, cultivar))) +
-			geom_line(size=0.3) +
-			facet_wrap(~rating, ncol=3) +
-			scale_y_continuous(limits=c(0,69)) +
-			scale_x_date(limits=as_date(c("2019-05-11","2019-08-08")), date_breaks="1 month", date_labels="%b %d") +
-			theme_bw() +
-			theme(axis.text=element_text(size=12), legend.text=element_text(size=12)) +
-			theme(axis.title.y=element_blank()) +
-			theme(plot.margin=margin(5.5,5.5,5.5,0), panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-			labs(x="Date", color="Graft", linetype="Cultivar")
-		}
-	
-	plot.e4.incid.perc = plot_grid(plot.e4.incid.perc.r1, plot.e4.incid.perc.r2, ncol=2, align="v", axis="lr")
-	
-	cowplot::ggsave(file="./4_results/rolfsii_4_field_incidence_all-ratings.png", device="png", plot=plot.e4.incid.perc, width=16, height=8, units="in")
-
-### SB_T only - examine variation among blocks
-	## group plots
-		# create column
-		e4.summ.plot.wet = e4.summ.plot %>% mutate(wet_rows=as.character(NA))
-		
-		# fill
-		e4.summ.plot.wet = e4.summ.plot.wet %>% mutate(wet_rows=replace(wet_rows, exp_rep == "2019" & block %in% c(4,5,6) & plot_num %in% c(4,5,6), "Row Wet"))
-		e4.summ.plot.wet = e4.summ.plot.wet %>% mutate(wet_rows=replace(wet_rows, exp_rep == "2018" | (exp_rep == "2019" & block %in% c(1,2,3) | (block %in% c(4,5,6) & plot_num %in% c(1,2,3))), "Row Dry"))		
-
-	plot.e4.incid.perc.sbt.blk = e4.summ.plot.wet %>% filter(rating %in% c("SB_T","O_T") & date != as_date("2018-08-10")) %>% {
-		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=cultivar, group=interaction(block, cultivar, graft))) +
-			geom_line(size=0.3) +
-			facet_grid(exp_rep ~ rating + wet_rows) +
-			theme_bw() +
-			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
-			theme(legend.position="bottom") +
-			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-			labs(x="Days After Planting", y="Incidence (%)", color="Graft", linetype="Cultivar")
-		}
-
-	ggplot2::ggsave(file="./4_results/rolfsii_4_field_incidence_sb_symp-plus-dead_only_wet-rows.png", device="png", plot=plot.e4.incid.perc.sbt.blk, width=8, height=6, units="in")
 
 ### SB_T (FOR PAPER)
 	plot.e4.incid.sb = e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% {
@@ -497,6 +482,39 @@ setwd(directory)
 
 	ggplot2::ggsave(file="./4_results/rolfsii_4_field_incidence_sb.png", device="png", plot=plot.e4.incid.sb, width=6, height=6, units="in")
 	
+### SB_T - incidence + audps combined (FOR PAPER)
+	## incidence
+	plot.e4.incid.sb.c = e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% {
+		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
+			geom_line(size=0.3) +
+			facet_grid(exp_rep ~ cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
+			theme_bw() +
+			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
+			theme(legend.position="bottom") +
+			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
+			labs(x="Days After Planting", y="Southern blight incidence (%)", color="Graft", linetype="Graft")
+		}
+
+	## audps
+	plot.e2.audps.c = e4.summ.plot %>% filter( 
+		ggplot(e2.incid.s, aes(y=raudps, x=graft)) +
+			geom_dotplot(binaxis="y", binwidth=2, dotsize=0.75, stackdir="center", stackratio=1.25) +
+			geom_text(data=e2.summ.audps.fig, aes(x=graft, y=raudps_mean, label=raudps_mean), hjust=-0.75) +
+			facet_grid(cultivar ~ ., labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
+			scale_x_discrete(labels=c("Maxifort","none")) + 
+			stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
+			theme_bw() +
+			theme(axis.title=element_text(size=12), axis.text=element_text(size=10)) +
+			labs(y="Relative area under disease progress stairs (% strikes)", x="Graft")
+
+	plot.e2.comb = ggarrange(plot.e2.incid, plot.e2.audps, widths=c(3.5,1.5))
+	
+	ggplot2::ggsave(file="./4_results/rolfsii_2_field-2017_disease_incid-audps.png", device="png", plot=plot.e2.comb, width=6.5, height=5, units="in")
+
+
+	ggplot2::ggsave(file="./4_results/rolfsii_4_field_incidence_sb.png", device="png", plot=plot.e4.incid.sb, width=6, height=6, units="in")
+
+
 
 ### CT_T (FOR PAPER)
 	plot.e4.incid.ct = e4.summ.plot %>% filter(rating == "CT_T" & date != as_date("2018-08-10")) %>% {

@@ -209,7 +209,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 		guides(color=guide_legend(nrow=1), linetype=guide_legend(nrow=1)) +
 		labs(y="Southern blight strikes (%)", x="Date", color="Graft", linetype="Graft")
 
-### audps - cultivar + graft
+	## audps - cultivar + graft
 	plot.e2.audps = ggplot(e2.incid.s, aes(y=raudps, x=graft)) +
 		geom_dotplot(binaxis="y", binwidth=2, dotsize=0.75, stackdir="center", stackratio=1.25) +
 		geom_text(data=e2.summ.audps.fig, aes(x=graft, y=raudps_mean, label=raudps_mean), hjust=-0.75) +
