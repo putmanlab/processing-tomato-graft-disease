@@ -11,6 +11,7 @@ library(lubridate)
 library(readr)
 library(stringr)
 library(tidyr)
+library(egg)
 
 install.packages("agricolae", dependencies=c("Depends","Imports"))
 library(agricolae)
