@@ -13,8 +13,9 @@ library(stringr)
 library(tidyr)
 library(egg)
 
-install.packages("agricolae", dependencies=c("Depends","Imports"))
-library(agricolae)
+## install epifitter for audps; installed from github because not available on CRAN for R 3.5; ref 00af96a is last commit (on 2021-06-14) as of 2022-05-12
+devtools::install_github("AlvesKS/epifitter", ref="00af96a")
+library(epifitter)
 
 directory="/home/tomato_graft_rolfsii"
 setwd(directory)
@@ -179,7 +180,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	e2.incid.s = e2.incid.f %>% arrange(cultivar, graft, block, subplot, date) %>% group_by(cultivar, graft, block, subplot)
 
 	## calculate
-	e2.incid.s = e2.incid.s %>% summarize(raudps=audps(perc_incid, days_after_plant, type="relative")) %>% ungroup()
+	e2.incid.s = e2.incid.s %>% summarize(raudps=AUDPS(y=perc_incid, time=days_after_plant, type="relative", y_proportion=FALSE)) %>% ungroup()
 	
 	## convert and round
 	e2.incid.s = e2.incid.s %>% mutate(raudps=round((raudps * 100), digits=0))
