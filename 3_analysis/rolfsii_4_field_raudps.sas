@@ -1,13 +1,14 @@
 * ************************************************** *
 * PROCESSING TOMATO Southern blight grafting 		 *
-* Experiment 4: Grafting - Field	         		 *
-* Data - relative Area Under Disease Progress Stairs *
+* Experiment 4: Grafting - Field 2018-2019     		 *
+* Data - Southern Blight							 *
+* relative Area Under Disease Progress Stairs 		 *
 * ************************************************** *;
 
 * set variables for automatic saving of output;
 %LET results_path=C:\Users\Alex Putman\GoogleDrive\UCR_VSPLab\08_Tomato_rolfsii\SAS_graft\4_results\;
 %LET results_path_img=C:\Users\Alex Putman\GoogleDrive\UCR_VSPLab\08_Tomato_rolfsii\SAS_graft\4_results\html_images;
-%LET name_base=rolfsii_graft-field-sb_;
+%LET name_base=rolfsii_graft-field-sb-audps_;
 
 ** log;
 proc printto new log="&results_path.&name_base.A_sas-log.log"; run;
@@ -24,7 +25,7 @@ options ls=90 nonumber formdlim=' ' pagesize=52 center;
 ** import data;
 proc import 
 	datafile="C:\Users\Alex Putman\GoogleDrive\UCR_VSPLab\08_Tomato_rolfsii\SAS_graft\2_data\rolfsii_4_field_audps_final.csv"
-	dbms=dlm replace out=field;
+	dbms=dlm replace out=field_audps;
 	delimiter=",";
 	getnames=YES;
 run;
@@ -32,8 +33,8 @@ run;
 
 ** convert cultivar to character;
 	* create new variable - put function always returns character so no $ needed;
-data field;
-	set field;
+data field_audps;
+	set field_audps;
 	exprep_new = put(exp_rep, 4.);
 	cult_new = put(cultivar, 4.);
 	drop exp_rep cultivar;
@@ -44,26 +45,26 @@ run;
 	* by rating for 'by group' processing in proc glimmix;
 	* good practice to sort dataset in same order that variables appear in class statement
 	* by days_after_plant to improve processing time (?);
-proc sort data=field;
+proc sort data=field_audps;
 	by rating exp_rep cultivar graft block;
 run;
 
 ** filter dataset for combined rating (_T: syptomatic + dead);
-	data field_t;
-		set field;
+	data field_audps_t;
+		set field_audps;
 		if rating not in ('SB_T','CT_T','O_T','V_T') then delete;
 	run;
 	
 ods html path="&results_path" body="&name_base.A_sas-output.html";
 ** check dataset;
-proc print data=field_t;
+proc print data=field_audps_t;
 	title "&name_base. full review";
 run;
 ods html close; * saves html;
 proc printto; run; * direct log back to SAS Log window;
 
 ** check variable types;
-proc contents data=field_t;
+proc contents data=field_audps_t;
 run;
 		
 		
@@ -76,7 +77,7 @@ run;
 	** OBJ: get fit statistics for random effect
 
 	** Step 1-1 ** 
-		* OBJ: simple random effect;
+		* OBJ: evaluate with stroup/complex random effect;
 
 		%LET name_step=B_step-1-1; %LET title_step=" B step 1-1 ";
 	
@@ -84,13 +85,13 @@ run;
 		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
 		
 		** analyze main effects;
-		proc glimmix data=field_t plot=residualpanel method=laplace;
+		proc glimmix data=field_audps_t plot=residualpanel plot=pearsonpanel method=laplace;
 			class rating exp_rep cultivar graft block;
 			by rating exp_rep;
 			model raudps = graft|cultivar / dist=beta link=logit htype=3;
-			random intercept / subject=block;
+			random intercept graft*cultivar graft*cultivar*subplot / subject=block;
 			covtest / wald;
-			title "field rAUDPS _T &title_step. simple random effect - get fit statistics";
+			title "field rAUDPS _T &title_step. - get fit statistics - complex/stroup random effect";
 		run;
 	
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
@@ -100,7 +101,7 @@ run;
 			* 2019: estimated G matrix not positive definite
 			
 	** Step 1-2 ** 
-		* OBJ: stroup random effect;
+		* OBJ: simpler random effect;
 
 		%LET name_step=B_step-1-2; %LET title_step=" B step 1-2 ";
 	
@@ -108,13 +109,13 @@ run;
 		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
 		
 		** analyze main effects;
-		proc glimmix data=field_t plot=residualpanel method=laplace;
+		proc glimmix data=field_audps_t plot=residualpanel plot=pearsonpanel method=laplace;
 			class rating exp_rep cultivar graft block;
 			by rating exp_rep;
 			model raudps = graft|cultivar / dist=beta link=logit htype=3;
 			random intercept graft*cultivar / subject=block;
 			covtest / wald;
-			title "field rAUDPS _T &title_step. stroup random effect - get fit statistics";
+			title "field rAUDPS _T &title_step. - get fit statistics - simpler random effect";
 		run;
 	
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;

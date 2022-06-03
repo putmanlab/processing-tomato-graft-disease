@@ -183,14 +183,17 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	e2.incid.s = e2.incid.s %>% summarize(raudps=AUDPS(y=perc_incid, time=days_after_plant, type="relative", y_proportion=FALSE)) %>% ungroup()
 	
 	## convert and round
-	e2.incid.s = e2.incid.s %>% mutate(raudps=round((raudps * 100), digits=0))
+	e2.incid.s = e2.incid.s %>% mutate(raudps=round((raudps * 100), digits=1))
 	
 ### summarize graft-cultivar (for figure)
 	## summarize
 	e2.summ.audps.fig = e2.incid.s %>% group_by(cultivar, graft) %>% summarize(raudps_mean=round(mean(raudps, na.rm=T), digits=1)) %>% ungroup()
 
 ### export curated data object
-	write_csv(e2.incid.s, path="./2_data_curated/rolfsii_2_field-2017_disease-incidence_audps_final.csv", na=".", col_names=T, append=F)
+	## convert to proportion
+	e2.incid.s.out = e2.incid.s %>% mutate(raudps=raudps/100)
+
+	write_csv(e2.incid.s.out, path="./2_data_curated/rolfsii_2_field-2017_disease-incidence_audps_final.csv", na=".", col_names=T, append=F)
 	
 	
 ###########

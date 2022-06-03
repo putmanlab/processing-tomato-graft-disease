@@ -66,10 +66,10 @@ proc printto; run; * direct log back to SAS Log window;
 * **************************** *;
 
 *** Step 1 ***;
-	** OBJ: get fit statistics for random effect, test for overdispersion;
+	** OBJ: get fit statistics for random effect (and test for overdispersion?);
 
 	** Step 1-1 **;
-		* OBJ: evaluate with negative binomial distribution;
+		* OBJ: evaluate with stroup/complex random effect;
 		
 		%LET name_step=B_step-1-1; %LET title_step=" B step 1-1 ";
 
@@ -79,20 +79,20 @@ proc printto; run; * direct log back to SAS Log window;
 		** analyze main effects;
 		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel method=laplace;
 			class cultivar graft block subplot;
-			model raudps = graft|cultivar / dist=negbinomial link=logit htype=3;
+			model raudps = graft|cultivar / dist=beta link=logit htype=3;
 			random intercept graft*cultivar graft*cultivar*subplot / subject=block;
 			covtest / wald;
-			title "field-2017 SB rAUDPS &title_step. - get fit statistics - negbinomial";
+			title "field-2017 SB rAUDPS &title_step. - get fit statistics - complex random effect";
 		run;
 
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 	
-		* RESULTS: 
+		* RESULTS: estimated G matrix not positive definite
 
 	** Step 1-2 **;
-		* OBJ: evaluate with poisson distribution;
+		* OBJ: evaluate with simpler random effect;
 		
-		%LET name_step=B_step-1-1; %LET title_step=" B step 1-2 ";
+		%LET name_step=B_step-1-2; %LET title_step=" B step 1-2 ";
 
 		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
 		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
@@ -100,19 +100,38 @@ proc printto; run; * direct log back to SAS Log window;
 		** analyze main effects;
 		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel method=laplace;
 			class cultivar graft block subplot;
-			model raudps = graft|cultivar / dist=poisson link=logit htype=3;
-			random intercept graft*cultivar graft*cultivar*subplot / subject=block;
+			model raudps = graft|cultivar / dist=beta link=logit htype=3;
+			random intercept graft*cultivar / subject=block;
 			covtest / wald;
-			title "field-2017 SB rAUDPS &title_step. - get fit statistics - poisson";
+			title "field-2017 SB rAUDPS &title_step. - get fit statistics - simple random effect";
 		run;
 
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 	
-		* RESULTS: 
+		* RESULTS: estimated g matrix not positive definite
 
-	** RESULTS: 
+	** RESULTS: estimated G matrix not positive definite
+ 
+	** CONCLUSION: simplify random effects
 
-	** CONCLUSION: 
+*** Step 2 ***;
+	** OBJ: evaluate with simple random effect;
+		
+		%LET name_step=B_step-2; %LET title_step=" B step 2 ";
+
+		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
+		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
+	
+		** analyze main effects;
+		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel method=laplace;
+			class cultivar graft block subplot;
+			model raudps = graft|cultivar / dist=beta link=logit htype=3;
+			random intercept graft*cultivar / subject=block;
+			covtest / wald;
+			title "field-2017 SB rAUDPS &title_step. - get fit statistics - block random effect";
+		run;
+
+		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 
 
 *** Step 2 ***;

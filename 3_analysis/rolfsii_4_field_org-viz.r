@@ -451,7 +451,7 @@ options(pillar.sigfig=4)
 	e4.summ.audps = e4.summ.audps %>% summarize(raudps=AUDPS(y=perc_incid, time=days_after_plant, type="relative", y_proportion=FALSE)) %>% ungroup()
 		
 	## convert and round
-	e4.summ.audps = e4.summ.audps %>% mutate(raudps=round((raudps * 100), digits=2))
+	e4.summ.audps = e4.summ.audps %>% mutate(raudps=round((raudps * 100), digits=1))
 	
 ### summarize graft-cultivar (for figure)
 	## summarize
@@ -465,9 +465,12 @@ options(pillar.sigfig=4)
 #	e4.summ.audps %>% filter(rating == "CT_T") %>% arrange(exp_rep, cultivar, graft, block)
 
 ### export	
+	## convert to proportions
+	e4.summ.audps.export = e4.summ.audps %>% mutate(raudps=raudps/100) 
+	
 	## convert raudps to character so that NAs use "."; in this version of readr, NaN are ignored by the na option
 		# convert column to character
-		e4.summ.audps.export = e4.summ.audps %>% mutate(raudps=as.character(raudps))
+		e4.summ.audps.export = e4.summ.audps.export %>% mutate(raudps=as.character(raudps))
 	
 		# replace NaN
 		e4.summ.audps.export = e4.summ.audps.export %>% mutate(raudps=replace(raudps, raudps == "NaN", NA))
@@ -480,19 +483,19 @@ options(pillar.sigfig=4)
 # G. Visualize #
 ################	
 
-### SB_T (FOR PAPER)
-	plot.e4.incid.sb = e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% {
-		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-			geom_line(size=0.3) +
-			facet_grid(exp_rep ~ cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-			theme_bw() +
-			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
-			theme(legend.position="bottom") +
-			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-			labs(x="Days After Planting", y="Southern blight incidence (%)", color="Graft", linetype="Graft")
-		}
-
-	ggplot2::ggsave(file="./4_results/rolfsii_4_field_sb_incid.png", device="png", plot=plot.e4.incid.sb, width=6, height=6, units="in")
+#### SB_T (FOR PAPER)
+#	plot.e4.incid.sb = e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% {
+#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
+#			geom_line(size=0.3) +
+#			facet_grid(exp_rep ~ cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
+#			theme_bw() +
+#			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
+#			theme(legend.position="bottom") +
+#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
+#			labs(x="Days After Planting", y="Southern blight incidence (%)", color="Graft", linetype="Graft")
+#		}
+#
+#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_sb_incid.png", device="png", plot=plot.e4.incid.sb, width=6, height=6, units="in")
 	
 #### SB_T - incidence + audps combined (FOR PAPER) 1_horizontal
 #	## incidence
@@ -556,19 +559,19 @@ options(pillar.sigfig=4)
 	ggplot2::ggsave(file="./4_results/rolfsii_4_field_sb_incid-audps_vert.png", device="png", plot=plot.e4.sb.comb.2, width=6.5, height=7, units="in")
 
 
-### CT_T (FOR PAPER)
-	plot.e4.incid.ct = e4.summ.plot %>% filter(rating == "CT_T" & date != as_date("2018-08-10")) %>% {
-		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-			geom_line(size=0.3) +
-			facet_grid(exp_rep ~ cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-			theme_bw() +
-			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
-			theme(legend.position="bottom") +
-			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-			labs(x="Days After Planting", y="Curly Top incidence (%)", color="Graft", linetype="Graft")
-		}
-
-	ggplot2::ggsave(file="./4_results/rolfsii_4_field_ct_incid.png", device="png", plot=plot.e4.incid.ct, width=6, height=6, units="in")
+#### CT_T (FOR PAPER)
+#	plot.e4.incid.ct = e4.summ.plot %>% filter(rating == "CT_T" & date != as_date("2018-08-10")) %>% {
+#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
+#			geom_line(size=0.3) +
+#			facet_grid(exp_rep ~ cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
+#			theme_bw() +
+#			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
+#			theme(legend.position="bottom") +
+#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
+#			labs(x="Days After Planting", y="Curly Top incidence (%)", color="Graft", linetype="Graft")
+#		}
+#
+#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_ct_incid.png", device="png", plot=plot.e4.incid.ct, width=6, height=6, units="in")
 
 #### CT_T - incidence + audps combined (FOR PAPER)
 #	## incidence
@@ -633,19 +636,19 @@ options(pillar.sigfig=4)
 	ggplot2::ggsave(file="./4_results/rolfsii_4_field_ct_incid-audps_vert.png", device="png", plot=plot.e4.ct.comb.2, width=6.5, height=7, units="in")
 
 	
-### O_T, V_T (FOR PAPER)
-	plot.e4.incid.ov = e4.summ.plot %>% filter(rating %in% c("O_T","V_T") & date != as_date("2018-08-10")) %>% {
-		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-			geom_line(size=0.3) +
-			facet_grid(exp_rep ~ rating + cultivar, labeller=labeller(rating=c(O_T="Other", V_T="Unknown Virus"), cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-			theme_bw() +
-			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
-			theme(legend.position="bottom") +
-			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-			labs(x="Days After Planting", y="Incidence (%)", color="Graft", linetype="Graft")
-		}
-
-	ggplot2::ggsave(file="./4_results/rolfsii_4_field_incidence_oth-vir.png", device="png", plot=plot.e4.incid.ov, width=8, height=6, units="in")
+#### O_T, V_T (FOR PAPER)
+#	plot.e4.incid.ov = e4.summ.plot %>% filter(rating %in% c("O_T","V_T") & date != as_date("2018-08-10")) %>% {
+#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
+#			geom_line(size=0.3) +
+#			facet_grid(exp_rep ~ rating + cultivar, labeller=labeller(rating=c(O_T="Other", V_T="Unknown Virus"), cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
+#			theme_bw() +
+#			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
+#			theme(legend.position="bottom") +
+#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
+#			labs(x="Days After Planting", y="Incidence (%)", color="Graft", linetype="Graft")
+#		}
+#
+#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_incidence_oth-vir.png", device="png", plot=plot.e4.incid.ov, width=8, height=6, units="in")
 
 ### O_T, V_T - incidence + audps horizontally, O_T and V_T vertically (FOR PAPER) 
 	### O_T
