@@ -449,6 +449,9 @@ options(pillar.sigfig=4)
 
 	## calculate
 	e4.summ.audps = e4.summ.audps %>% summarize(raudps=AUDPS(y=perc_incid, time=days_after_plant, type="relative", y_proportion=FALSE)) %>% ungroup()
+	
+	## remove Inf
+	e4.summ.audps = e4.summ.audps %>% mutate(raudps=replace(raudps, raudps == Inf, NA))
 		
 	## convert and round
 	e4.summ.audps = e4.summ.audps %>% mutate(raudps=round((raudps * 100), digits=1))

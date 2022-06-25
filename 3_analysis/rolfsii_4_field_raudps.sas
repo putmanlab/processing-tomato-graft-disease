@@ -77,7 +77,7 @@ run;
 	** OBJ: get fit statistics for random effect
 
 	** Step 1-1 ** 
-		* OBJ: evaluate with stroup/complex random effect;
+		* OBJ: evaluate with random effect;
 
 		%LET name_step=B_step-1-1; %LET title_step=" B step 1-1 ";
 	
@@ -89,7 +89,7 @@ run;
 			class rating exp_rep cultivar graft block;
 			by rating exp_rep;
 			model raudps = graft|cultivar / dist=beta link=logit htype=3;
-			random intercept graft*cultivar graft*cultivar*subplot / subject=block;
+			random intercept / subject=block;
 			covtest / wald;
 			title "field rAUDPS _T &title_step. - get fit statistics - complex/stroup random effect";
 		run;
@@ -97,11 +97,11 @@ run;
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 	
 		* RESULTS: partially successful 
-			* 2018: converged, no overdispersion (Pearson/DF 0.57)
+			* 2018: converged, no overdispersion
 			* 2019: estimated G matrix not positive definite
 			
 	** Step 1-2 ** 
-		* OBJ: simpler random effect;
+		* OBJ: no random effect;
 
 		%LET name_step=B_step-1-2; %LET title_step=" B step 1-2 ";
 	
@@ -113,79 +113,17 @@ run;
 			class rating exp_rep cultivar graft block;
 			by rating exp_rep;
 			model raudps = graft|cultivar / dist=beta link=logit htype=3;
-			random intercept graft*cultivar / subject=block;
 			covtest / wald;
 			title "field rAUDPS _T &title_step. - get fit statistics - simpler random effect";
 		run;
 	
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 	
-		* RESULTS: partially unsuccessful 
-			* 2018: converged
-			* 2019: estimated G matrix not positive definite
+		* NOTE: random effect (just intercept or intercept graft*cultivar resulted in estimated G matrix error for SB_T 2019;
+		* RESULTS: converged
+			* intercept effect was small when included
 	
-	** CONCLUSIONS: 
-		* separating days_after_plant does not affect ability to fit model
-		* try removing graft*cultivar from random effect
-
-
-*** Step 2 ***;
-	** OBJ: get fit statistics for random effect, test for overdispersion
-		-try simpler random effects to eliminate g matrix error for 2019
-		-to determine if all blocks/dates can be included if days_after_plant removed from interaction term
-
-	** Step 2-1 ** 
-		* OBJ: include days_after_plant;
-
-		%LET name_step=B_step-2-1; %LET title_step=" B step 2-1 ";
-	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
-		
-		** analyze main effects;
-		proc glimmix data=field_d127 plot=residualpanel method=laplace;
-			class exp_rep cultivar graft block days_after_plant;
-			by exp_rep;
-			model rating_sum / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
-			random intercept / subject=block;
-			covtest / wald;
-			title "field SB &title_step. d127, all blocks - simple random effect - get fit statistics, with days after plant";
-		run;
-	
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-	
-		* RESULTS: successful
-			* 2018: converged, very mild evidence of overdispersion (1.21), sensible results. cultivar*graft interaction
-			* 2019: converged, very mild evidence of overdispersion (1.10), sensible results. graft only
-
-	** Step 2-2 ** 
-		* OBJ: separate days_after_plant;
-
-		%LET name_step=B_step-2-2; %LET title_step=" B step 2-2 ";
-	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
-		
-		** analyze main effects;
-		proc glimmix data=field_d127 plot=residualpanel method=laplace;
-			class exp_rep cultivar graft block days_after_plant;
-			by exp_rep;
-			model rating_sum / n_plants = graft|cultivar days_after_plant / dist=binomial link=logit htype=3;
-			random intercept / subject=block;
-			covtest / wald;
-			title "field SB &title_step. d127, all blocks - simple random effect - get fit statistics, separate days after plant";
-		run;
-	
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-	
-		* RESULTS: successful
-			* 2018: converged, very mild evidence of overdispersion (1.32), sensible results. cultivar*graft interaction
-			* 2019: converged, very mild evidence of overdispersion (1.33), sensible results. graft only
-	
-	** CONCLUSIONS: 
-		* days_after_plant: separating does not affect ability to fit model
-		* use laplace, not doing so requires removing 2nd rating date in 2018
-		* use simpler random effect for 2019
+	** CONCLUSIONS: remove random effect
 
 
 * ************************* *
@@ -193,62 +131,26 @@ run;
 * ************************* *;
 
 *** Step 1 ***;
-	** OBJ: analyze main effects
-		* use simpler random effect term for 2019 to remove G matrix warning;
-
-	** Step 1-1 **
-		* OBJ: evaluate main effects for 2018 (with random graft*cultivar);
-
-		** create dataset;
-		data field_r18_d127;
-			set field_d127;
-			if exp_rep = '2019' then delete;
-		run;
-
-		%LET name_step=C_step-1-1; %LET title_step=" C step 1-1 ";
+	** OBJ: analyze main effects (remove method=laplace);
+	%LET name_step=C_step-1; %LET title_step=" C step 1 ";
 	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
+	ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
+	proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
 		
-		** analyze main effects;
-		proc glimmix data=field_r18_d127 method=laplace;
-			class cultivar graft block days_after_plant;
-			model rating_sum / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
-			random intercept graft*cultivar / subject=block;
-			title "field SB &title_step. d127, all blocks - 2018 only - analyze main effects";
-		run;
+	** analyze main effects;
+	proc glimmix data=field_audps_t;
+		class rating exp_rep cultivar graft block;
+		by rating exp_rep;
+		model raudps = graft|cultivar / dist=beta link=logit htype=3;
+		covtest / wald;
+		title "field SB _T &title_step. - analyze main effects";
+	run;
 	
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
+	ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 
-		* RESULTS: effect of graft and days_after_plant, some evidence for cultivar
-
-	** Step 1-2 **
-		* OBJ: evaluate main effects for 2019 (without random graft*cultivar to remove G matrix error);
-
-		** create dataset;
-		data field_r19_d0;
-			set field_d0;
-			if exp_rep = '2018' then delete;
-		run;
-
-		%LET name_step=C_step-1-2; %LET title_step=" C step 1-2 ";
+	** RESULTS: significant effect of graft for CT_T and SB_T in both years
 	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
-		
-		** analyze main effects;
-		proc glimmix data=field_r19_d0 method=laplace;
-			class cultivar graft block days_after_plant;
-			model rating_sum / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
-			random intercept / subject=block;
-			title "field SB &title_step. d0, all blocks - 2019 only - analyze main effects";
-		run;
-	
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-
-		* RESULTS: effect of graft, some evidence for days_after_plant, very weak evidence for cultivar
-	
-	** CONCLUSION: separate means
+	** CONCLUSION: separate measn
 
 
 * **************************** *
@@ -256,53 +158,20 @@ run;
 * **************************** *;
 
 *** Step 1 ***;
-	** OBJ: separate means
-		* use simpler random effect term for 2019 to remove G matrix warning;
+	** OBJ: separate means;
 
-	** Step 1-1 **
-		* OBJ: separate means for 2018 (with random graft*cultivar);
-
-		%LET name_step=D_step-1-1; %LET title_step=" D step 1-1 ";
+	%LET name_step=D_step-1; %LET title_step=" D step 1 ";
 	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
+	ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
+	proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
 		
-		proc glimmix data=field_r18_d127 method=laplace;
-			class cultivar graft block days_after_plant;
-			model rating_sum / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
-			random intercept graft*cultivar / subject=block;
-
-			lsmeans graft / lines ilink adjust=tukey adjdfe=row;
-
-			title "field SB &title_step. d127, all blocks - 2018 only - separate means";
-		run;
+	** analyze main effects;
+	proc glimmix data=field_audps_t;
+		class rating exp_rep cultivar graft block;
+		by rating exp_rep;
+		model raudps = graft|cultivar / dist=beta link=logit htype=3;
+		lsmeans graft / lines ilink adjust=tukey adjdfe=row;
+		title "field SB _T &title_step. - separate means";
+	run;
 	
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-
-		* RESULTS: standard/tall similar to each other, both different from none
-		
-
-	** Step 1-2 **
-		* OBJ: separate means for 2019 (without random graft*cultivar to remove G matrix error);
-
-		%LET name_step=D_step-1-2; %LET title_step=" D step 1-2 ";
-	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
-		
-		proc glimmix data=field_r19_d0 method=laplace;
-			class cultivar graft block days_after_plant;
-			model rating_sum / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
-			random intercept / subject=block;
-	
-			lsmeans graft / lines ilink adjust=tukey adjdfe=row;
-
-			title "field SB &title_step. d0, all blocks - 2019 only - separate means";
-		run;
-	
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-
-		* RESULTS: standard/tall similar to each other, both different from none
-
-	
-
+	ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;

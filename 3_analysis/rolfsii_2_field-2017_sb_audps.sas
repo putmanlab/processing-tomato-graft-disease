@@ -87,7 +87,7 @@ proc printto; run; * direct log back to SAS Log window;
 
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 	
-		* RESULTS: estimated G matrix not positive definite
+		* RESULTS: did not run ("the initial estimates did not yield a valid objective function")
 
 	** Step 1-2 **;
 		* OBJ: evaluate with simpler random effect;
@@ -101,122 +101,41 @@ proc printto; run; * direct log back to SAS Log window;
 		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel method=laplace;
 			class cultivar graft block subplot;
 			model raudps = graft|cultivar / dist=beta link=logit htype=3;
-			random intercept graft*cultivar / subject=block;
+			random intercept / subject=block;
 			covtest / wald;
 			title "field-2017 SB rAUDPS &title_step. - get fit statistics - simple random effect";
 		run;
 
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
 	
-		* RESULTS: estimated g matrix not positive definite
-
-	** RESULTS: estimated G matrix not positive definite
+		* NOTE: including graft*cultivar in random effect causes estimated G matrix error
+		* RESULTS: ran smoothly
  
-	** CONCLUSION: simplify random effects
+	** CONCLUSION: use simple random effects
 
-*** Step 2 ***;
-	** OBJ: evaluate with simple random effect;
+
+* ************************ *
+* C. Analyze - Main Effect *
+* ************************ *;
+
+*** Step 1 ***;
+	** OBJ: evaluate with simple random effect (remove method=laplace);
 		
-		%LET name_step=B_step-2; %LET title_step=" B step 2 ";
+		%LET name_step=C_step-1; %LET title_step=" C step 1 ";
 
 		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
 		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
 	
 		** analyze main effects;
-		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel method=laplace;
+		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel;
 			class cultivar graft block subplot;
 			model raudps = graft|cultivar / dist=beta link=logit htype=3;
-			random intercept graft*cultivar / subject=block;
-			covtest / wald;
-			title "field-2017 SB rAUDPS &title_step. - get fit statistics - block random effect";
-		run;
-
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-
-
-*** Step 2 ***;
-	** OBJ: attempt to correct for overdispersion
-	
-	** Step 2-1 **
-		* OBJ: quasi-likelihood to correct for overdispersion;
-
-		%LET name_step=B_step-2-1; %LET title_step=" B step 2-1 ";
-	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
-		
-		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel;
-			class cultivar graft block subplot days_after_plant;
-			model disease_incidence / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
 			random intercept / subject=block;
-			random _residual_;
 			covtest / wald;
-			title "field-2017 SB &title_step. - correct for overdispersion - quasi-likelihood";
+			title "field-2017 SB rAUDPS &title_step. - analyze";
 		run;
-	
+
 		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-		
-		* RESULTS: 
-
-	** Step 2-1 **
-		* OBJ: standard model (no Laplace = conditional model = pseudo-likelihood?);
-		
-		%LET name_step=B_step-2-2; %LET title_step=" B step 2-2 ";
-	
-		ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-		proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
-		
-		proc glimmix data=field_audps_17 plot=residualpanel plot=pearsonpanel;
-			class cultivar graft block subplot days_after_plant;
-			model disease_incidence / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
-			random intercept graft*cultivar graft*cultivar*subplot / subject=block;
-			covtest / wald;
-			title "field-2017 SB &title_step. - correct for overdispersion - standard/conditional model (no laplace)";
-		run;
-	
-		ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-		
-		* RESULTS: 
-
-	** CONCLUSION: unclear if corrected
-		* analyze graft*days_after_plant interaction
-		
-
-* ************************ *
-* C. Analyze - Interaction *
-* ************************ *;
-
-*** Step 1 ***;
-	** OBJ: analyze interaction;
-
-	%LET name_step=C_step-1; %LET title_step=" C step 1 ";
-
-	ods html body="&name_base.&name_step._sas-output.html" (title=&title_step) path="&results_path" gpath="&results_path_img" (url="html_images/"); ods graphics on / reset imagename="&name_base.&name_step";
-	proc printto new log="&results_path.&name_base.&name_step._sas-log.log"; run;
-	
-	** analyze main effects;
-	proc glimmix data=field_audps_17 method=laplace;
-		class cultivar graft block subplot days_after_plant;
-		model disease_incidence / n_plants = graft|cultivar|days_after_plant / dist=binomial link=logit htype=3;
-		random intercept graft*cultivar graft*cultivar*subplot / subject=block;
-
-		slice graft*days_after_plant / sliceBy=days_after_plant;
-		slice cultivar*days_after_plant / sliceBy=cultivar;
-		slice cultivar*days_after_plant / sliceBy=days_after_plant;
-
-		title "field-2017 SB &title_step. - analyze interactions";
-	run;
-
-	ods graphics off; ods html close; proc printto; run; * saves html, direct log back to SAS Log window;
-	
-	** RESULTS: 
-		* graft:
-			* effect of graft significant for all dates except date 2
-			* incidence is numerically higher in non-grafted plots on all dates
-		* cultivar: 
-			* when sliced by days_after_plant, effect of cultivar not significant on any date
-			* when sliced by cultivar, days_after_plant significant for both cultivars
-	** CONCLUSION: 
 
 
 
