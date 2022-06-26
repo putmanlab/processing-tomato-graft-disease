@@ -362,6 +362,14 @@ options(pillar.sigfig=4)
 		
 		# export
 		write_csv(e4.summ.plot.export, path="./2_data_curated/rolfsii_4_field_incidence_by-plot_final.csv", na=".", append=F, col_names=T)
+
+### graft-cultivar - rating date (for figure)
+	## summarize; exclude last date in 2018
+	e4.summ.incid.fig = e4.summ.plot %>% 
+		filter(date != as_date("2018-08-10")) %>%
+		group_by(exp_rep, cultivar, graft, days_after_plant, rating) %>% 
+		summarize(incid_mean=round(mean(perc_incid, na.rm=T), digits=1)) %>% 
+		ungroup()
 		
 	
 #########################
@@ -534,8 +542,9 @@ options(pillar.sigfig=4)
 ### SB_T - incidence + audps combined (FOR PAPER) 2_vertical
 	## incidence
 	plot.e4.incid.sb.c2 = e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% {
-		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-			geom_line(size=0.3) +
+		ggplot(., aes(color=graft, linetype=graft)) +
+			geom_line(aes(x=days_after_plant, y=perc_incid, group=interaction(block, graft, cultivar)), size=0.2, alpha=0.6) +
+			geom_line(data={e4.summ.incid.fig %>% filter(rating == "SB_T")}, aes(x=days_after_plant, y=incid_mean), size=1.1) +
 			facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 			theme_bw() +
 			theme(axis.title=element_text(size=12), axis.text=element_text(size=11), legend.text=element_text(size=11), strip.text=element_text(size=12)) +
@@ -611,8 +620,9 @@ options(pillar.sigfig=4)
 ### CT_T - incidence + audps combined (FOR PAPER) 2_vertical
 	## incidence
 	plot.e4.incid.ct.c2 = e4.summ.plot %>% filter(rating == "CT_T" & date != as_date("2018-08-10")) %>% {
-		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-			geom_line(size=0.3) +
+		ggplot(., aes(color=graft, linetype=graft)) +
+			geom_line(aes(x=days_after_plant, y=perc_incid, group=interaction(block, graft, cultivar)), size=0.2, alpha=0.6) +
+			geom_line(data={e4.summ.incid.fig %>% filter(rating == "CT_T")}, aes(x=days_after_plant, y=incid_mean), size=1.1) +
 			facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 			theme_bw() +
 			theme(axis.title=element_text(size=12), axis.text=element_text(size=11), legend.text=element_text(size=11), strip.text=element_text(size=12)) +
@@ -657,8 +667,9 @@ options(pillar.sigfig=4)
 	### O_T
 		## incidence
 		plot.e4.incid.ot.c = e4.summ.plot %>% filter(rating == "O_T" & date != as_date("2018-08-10")) %>% {
-			ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-				geom_line(size=0.3) +
+			ggplot(., aes(color=graft, linetype=graft)) +
+				geom_line(aes(x=days_after_plant, y=perc_incid, group=interaction(block, graft, cultivar)), size=0.2, alpha=0.6) +
+				geom_line(data={e4.summ.incid.fig %>% filter(rating == "O_T")}, aes(x=days_after_plant, y=incid_mean), size=1.1) +
 				facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 				theme_bw() +
 				theme(axis.title=element_text(size=11), axis.text=element_text(size=10), legend.text=element_text(size=10), strip.text=element_text(size=11)) +
@@ -683,8 +694,9 @@ options(pillar.sigfig=4)
 	### V_T
 		## incidence
 		plot.e4.incid.vo.c = e4.summ.plot %>% filter(rating == "V_T" & date != as_date("2018-08-10")) %>% {
-			ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-				geom_line(size=0.3) +
+			ggplot(., aes(color=graft, linetype=graft)) +
+				geom_line(aes(x=days_after_plant, y=perc_incid, group=interaction(block, graft, cultivar)), size=0.2, alpha=0.6) +
+				geom_line(data={e4.summ.incid.fig %>% filter(rating == "V_T")}, aes(x=days_after_plant, y=incid_mean), size=1.1) +
 				facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 				theme_bw() +
 				theme(axis.title=element_text(size=11), axis.text=element_text(size=10), legend.text=element_text(size=10), strip.text=element_text(size=11)) +
