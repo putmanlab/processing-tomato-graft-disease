@@ -628,7 +628,7 @@ options(pillar.sigfig=4)
 			theme(axis.title=element_text(size=12), axis.text=element_text(size=11), legend.text=element_text(size=11), strip.text=element_text(size=12)) +
 			theme(legend.position="bottom", legend.margin=margin(t=-5)) +
 			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-			labs(x="Days After Planting", y="Curly top incidence (%)", color="Graft", linetype="Graft")
+			labs(x="Days After Planting", y="Incidence of curly top symptoms (%)", color="Graft", linetype="Graft")
 		}
 
 	## audps
