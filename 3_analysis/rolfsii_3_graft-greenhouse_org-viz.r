@@ -129,4 +129,66 @@ setwd(directory)
 	plot.e3.bar = plot_grid(plot.e3.bar.r1, plot.e3.bar.r2, ncol=1, labels=c("2018","2019"), vjust=c(1.5,1), hjust=-1)
 		
 	cowplot::ggsave(file="./4_results/rolfsii_3_graft-gh_severity_bar.png", device="png", plot=plot.e3.bar, width=6.5, height=7.5, units="in")
+	
+
+##################
+# C. Logger Data #
+##################
+
+### import
+	## each
+	in.gh.logger.18 = read_csv(file=paste(directory, "/2_data/greenhouse graft Hobo T&RH data 2018.csv", sep=""), col_names=T)
+	in.gh.logger.19 = read_csv(file=paste(directory, "/2_data/greenhouse graft 2019 logger data.csv", sep=""), col_names=T)
+
+	## bind
+	in.gh.logger = bind_rows(in.gh.logger.18, in.gh.logger.19)
+	
+	## organize
+		# rename columns
+		in.gh.logger = in.gh.logger %>% rename(row_id=`#`, datetime=`Date Time, GMT -0700`, temp_instant=`Temp, °F`, temp_avg=`Temp - Avg, °F`, rh_instant=`RH, %`, rh_avg=`RH - Avg, %`, dewpt=`DewPt, °F`)
+		
+		# convert to datetime; NOTE: timezone is UTC-7
+		in.gh.logger = in.gh.logger %>% mutate(datetime=ymd_hms(datetime))
+				
+		# remove unneeded columns
+		in.gh.logger = in.gh.logger %>% select(datetime, temp_avg, rh_avg)
+
+		# convert to C
+		data.env = in.gh.logger %>% mutate(temp_avg=round(((temp_avg-32)*(5/9)), digits=1))
+		
+### remove data outside experiment/logging period; in 2019 logging was stopped exactly at end of trial
+	# 2018 start date
+	data.env = data.env %>% filter(date(datetime) >= as_date("2018-06-12"))
+	
+	# 2018 end date
+	data.env = data.env %>% filter(date(datetime) <= as_date("2018-10-01") | date(datetime) >= as_date("2019-01-01"))
+	
+	# 2019 start date
+	data.env = data.env %>% filter(date(datetime) < as_date("2019-01-01") | date(datetime) >= as_date("2019-06-04"))
+	
+### summarize
+	## summarize by hour
+	data.env.hr = data.env %>% group_by(datetime=ceiling_date(datetime, "hour")) %>% summarize(temp_hr=mean(temp_avg, na.rm=T), rh_hr=mean(rh_avg, na.rm=T))
+
+	## mean overall
+	data.env.hr %>% group_by(year=year(datetime)) %>% summarize(temp_mean_yr=mean(temp_hr, na.rm=T), rh_mean_yr=mean(rh_hr, na.rm=T))
+	
+	## daily min/max yearly summary
+		# get daily stats
+		summ.env.day = data.env.hr %>% 
+			group_by(date=ceiling_date(datetime, "day")) %>% 
+			summarize(
+				temp_max=max(temp_hr, na.rm=T),
+				temp_avg=mean(temp_hr, na.rm=T), 
+				temp_min=min(temp_hr, na.rm=T),
+				rh_max=max(rh_hr, na.rm=T),
+				rh_avg=mean(rh_hr, na.rm=T),
+				rh_min=min(rh_hr, na.rm=T) ) %>%
+			ungroup()
+		
+		# gather
+		summ.env.day = summ.env.day %>% gather(key="variable", value="value", -date)
+		
+		# calculate yearly summary
+		summ.env.day.yr = summ.env.day %>% group_by(year=year(date), variable) %>% summarize(min_yr=min(value), avg_yr=mean(value), max_yr=max(value)) %>% ungroup()
 		
