@@ -438,10 +438,24 @@ options(pillar.sigfig=4)
 		
 		# calculate average
 		e4.summ.ct.graft.d17 = e4.summ.ct.graft.d17 %>% mutate(rating_avg_dates=round(rating_total/dates_ct, digits=1), plants_avg_dates=(plants_sum/dates_ct), incid_avg=round( (rating_total / plants_sum)*100, digits=1)) %>% ungroup()
+
+### cultivar only - overall mean (FOR PAPER)
+	# mean calculated by summing total number of plants affected and in plot across all blocks and cultivars
+		# cannot do mean of means (mean of plot or treatment means) because sample size varies due to slightly different number of plants in each plot and some missing plots for some treatments
+	# CT - d17; 2018, rating dates 1,7 removed; 2019, none removed
+		# filter for desired rating, dates
+		e4.summ.ct.cult.d17 = e4.summ.plot %>% filter(rating == "CT_T") %>% filter(!date %in% as_date(c("2018-05-11","2018-08-10")))
+		
+		# summarize
+		e4.summ.ct.cult.d17 = e4.summ.ct.cult.d17 %>% group_by(exp_rep, cultivar) %>% summarize(rating_total=sum(rating_sum), plants_sum=sum(n_plants), dates_ct=n_distinct(date))
+		
+		# calculate average
+		e4.summ.ct.cult.d17 = e4.summ.ct.cult.d17 %>% mutate(rating_avg_dates=round(rating_total/dates_ct, digits=1), plants_avg_dates=(plants_sum/dates_ct), incid_avg=round( (rating_total / plants_sum)*100, digits=1)) %>% ungroup()
 	
-	## export
+### export
 	write_csv(e4.summ.sb.graft.d127, path="./4_results/rolfsii_4_field_incidence_summ-table_SB_graft_d127_overall-mean.csv", na="NA", append=F, col_names=T)
 	write_csv(e4.summ.ct.graft.d17, path="./4_results/rolfsii_4_field_incidence_summ-table_CT_graft_d17_overall-mean.csv", na="NA", append=F, col_names=T)
+	write_csv(e4.summ.ct.cult.d17, path="./4_results/rolfsii_4_field_incidence_summ-table_CT_cult_d17_overall-mean.csv", na="NA", append=F, col_names=T)
 
 
 ########################
