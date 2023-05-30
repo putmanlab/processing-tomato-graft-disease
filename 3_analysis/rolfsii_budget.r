@@ -153,31 +153,113 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 ### functions for strip labels
 	lab.price = as_labeller(function(x) { paste("$", x, "/t", sep="") })
 	lab.incid = as_labeller(function(x) { paste(x, "%", sep="") })
+	
+### get dataset for area fill
+	## rename
+	df.line.fill = df.line %>% rename(yield_break_graft=break_yield)
+
+	## set boundaries - yield
+	df.line.fill = df.line.fill %>% mutate(
+		yield_min_graft=case_when(
+			(yield_break_graft <   82.96)						    	~ 82.96,
+			(yield_break_graft >=  82.96 & yield_break_graft <  109.87) ~ yield_break_graft,
+			(yield_break_graft >= 109.87)						    	~ NA_real_),
+		yield_avgmax_graft=case_when(
+			(yield_break_graft <  109.87) 								~ 109.87,
+			(yield_break_graft >= 109.87) 								~ NA_real_),
+		yield_avgmin_graft=case_when(
+			(yield_break_graft <  109.87) 								~ 109.87,
+			(yield_break_graft >= 109.87 & yield_break_graft <= 163.68) ~ yield_break_graft,
+			(yield_break_graft >  163.68) 								~ NA_real_),
+		yield_max_graft=case_when(
+			(yield_break_graft <  163.68) 								~ 163.68,
+			(yield_break_graft >= 163.68) 								~ NA_real_) )
+
+	## duplicate
+	df.line.fill = df.line.fill %>% mutate(
+		yield_break_nongraft=yield_break_graft, yield_min_nongraft=yield_min_graft, yield_avgmax_nongraft=yield_avgmax_graft, 
+		yield_avgmin_nongraft=yield_avgmin_graft, yield_max_nongraft=yield_max_graft)
+		
+	## calculate cost
+	df.line.fill = df.line.fill %>% mutate(
+		across(
+			c(yield_break_graft, yield_min_graft, yield_avgmax_graft, yield_avgmin_graft, yield_max_graft), 
+			~ (( graft_m * .x) + graft_b),
+			.names="cost_{col}"),
+		across(
+			c(yield_break_nongraft, yield_min_nongraft, yield_avgmax_nongraft, yield_avgmin_nongraft, yield_max_nongraft), 
+			~ (( nongraft_m * .x) + nongraft_b),
+			.names="cost_{col}") )
+
+	## remove unneeded columns
+	df.line.fill = df.line.fill %>% select(
+		-graft_b, -graft_m, -nongraft_b, -nongraft_m,
+		-break_cost,
+		-yield_break_nongraft, -yield_break_graft, -cost_yield_break_nongraft, -cost_yield_break_graft)
+			
+	## gather
+	df.line.fill = df.line.fill %>% gather(key="variable", value="value", -production, -price, -incid_nongraft)
+	
+	## remove "yield"
+	df.line.fill = df.line.fill %>% mutate(variable=str_replace(variable, "_yield_", "_"))
+	
+	## separate
+	df.line.fill = df.line.fill %>% separate(variable, into=c("variable","position","treatment"), sep="_", remove=T)
+	
+	## spread cost/yield (y axis)
+	df.line.fill = df.line.fill %>% spread(key=variable, value=value)
+
+	## filter
+	df.line.fill = df.line.fill %>% filter(!(is.na(cost) & is.na(yield)))
+
+	## spread break/max (x axis)
+	df.line.fill = df.line.fill %>% spread(key=treatment, value=cost)
+	
+	## add fill vairable
+	df.line.fill = df.line.fill %>% mutate(group=case_when(
+		(position %in% c("min","avgmax")) ~ "< 109.9 t/ha",	
+		(position %in% c("avgmin","max")) ~ ">= 109.9 t/ha") )	
+	
+	## remove column
+#	df.line.fill = df.line.fill %>% select(-position)
+	
+	## find min/max
+	df.line.fill = df.line.fill %>% rowwise() %>% mutate(cost_min=min(graft,nongraft), cost_max=max(graft,nongraft))
+	
+	## remove columns
+	df.line.fill = df.line.fill %>% select(-graft, -nongraft)
+	
+	## round prices
+	df.line.fill = df.line.fill %>% mutate(price=round(price, digits=0))
 
 ### individual facets
 	plot.1.conv = df.pt %>% filter(production == "conventional") %>% mutate(price=round(price, digits=0)) %>% {
-	ggplot(., aes(x=yield_base, y=cost_net, linetype=treatment)) +
-		geom_line(size=0.5) +
+	ggplot(.) +
+		geom_line(size=0.6, aes(x=yield_base, y=cost_net, linetype=treatment)) +
+		geom_ribbon(data={ df.line.fill %>% filter(production == "conventional") }, aes(x=yield, ymin=cost_min, ymax=cost_max, fill=group), alpha=0.4) +
 		facet_grid(incid_nongraft ~ price, labeller=labeller(price=lab.price, incid_nongraft=lab.incid)) +
 		scale_x_continuous(breaks=c(93,123,153), minor_breaks=c(103,113,133,143)) +
 		theme_bw() +
 		theme(axis.title=element_text(size=12), axis.text=element_text(size=10), strip.text=element_text(size=12)) +
 		theme(axis.title.x=element_text(margin=margin(7.5,0,-5,0)), axis.title.y=element_text(margin=margin(0,7.5,0,0))) +
-		theme(legend.position="bottom", legend.margin=margin(0,0,0,0), legend.text=element_text(size=11)) +
-		labs(x="Yield (tonnes [t]/hectare)", y="Net returns over analyzed costs ($)", linetype="Transplants")
+		theme(legend.position="bottom", legend.box="vertical", legend.margin=margin(0,0,0,0), legend.text=element_text(size=11)) +
+		guides(linetype=guide_legend(order=0), fill=guide_legend(order=1)) +
+		labs(x="Yield (tonnes [t]/hectare)", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
 	}
 	ggplot2::ggsave(file="./4_results/rolfsii_budget_facet_conv.png", device="png", plot=plot.1.conv, width=6.5, height=6.5, units="in")
 
 	plot.1.org = df.pt %>% filter(production == "organic") %>% mutate(price=round(price, digits=0))  %>% {
-	ggplot(., aes(x=yield_base, y=cost_net, linetype=treatment)) +
-		geom_line(size=0.5) +
+	ggplot(.) +
+		geom_line(size=0.6, aes(x=yield_base, y=cost_net, linetype=treatment)) +
+		geom_ribbon(data={ df.line.fill %>% filter(production == "organic") }, aes(x=yield, ymin=cost_min, ymax=cost_max, fill=group), alpha=0.4) +
 		facet_grid(incid_nongraft ~ price, labeller=labeller(price=lab.price, incid_nongraft=lab.incid)) +
 		scale_x_continuous(breaks=c(93,123,153), minor_breaks=c(103,113,133,143)) +
 		theme_bw() +
 		theme(axis.title=element_text(size=12), axis.text=element_text(size=10), strip.text=element_text(size=12)) +
 		theme(axis.title.x=element_text(margin=margin(7.5,0,-5,0)), axis.title.y=element_text(margin=margin(0,7.5,0,0))) +
-		theme(legend.position="bottom", legend.margin=margin(0,0,0,0)) +
-		labs(x="Yield (tonnes [t]/hectare)", y="Net returns over analyzed costs ($)", linetype="Transplants")
+		theme(legend.position="bottom", legend.box="vertical", legend.margin=margin(0,0,0,0), legend.text=element_text(size=11)) +
+		guides(linetype=guide_legend(order=0), fill=guide_legend(order=1)) +
+		labs(x="Yield (tonnes [t]/hectare)", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
 	}
 	ggplot2::ggsave(file="./4_results/rolfsii_budget_facet_org.png", device="png", plot=plot.1.org, width=6.5, height=6.5, units="in")
 		
