@@ -7,8 +7,8 @@
 
 if (!require(conflicted)) {
   install.packages("conflicted")
-  library(conflicted)
 }
+library(conflicted)
 
 library(dplyr)
 library(ggplot2)
@@ -63,10 +63,10 @@ setwd("/home/tomato_graft_rolfsii/")
 			(treatment == "graft") ~ round(yield_base*0.145, digits=1),
 			(treatment == "nongraft") ~ 0),
 		cost_reduce = case_when(
-			(treatment == "graft") ~ 403,
+			(treatment == "graft") ~ 362,
 			(treatment == "nongraft") ~ 0),
 		cost_add = case_when(
-			(treatment == "graft") ~ -3115,
+			(treatment == "graft") ~ -2890,
 			(treatment == "nongraft") ~ 0) )
 			
 	## add reduced yield
