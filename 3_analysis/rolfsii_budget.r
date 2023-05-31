@@ -146,9 +146,10 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 ### summarize
 	df.line %>% filter(break_yield < 163.68) %>% arrange(production, incid_nongraft, price) %>% print(n=Inf)
 	
-################
-# B. Visualize #
-################
+	
+##########################
+# B. Visualize - Prepare #
+##########################
 
 ### functions for strip labels
 	lab.price = as_labeller(function(x) { paste("$", x, "/t", sep="") })
@@ -231,6 +232,15 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 	
 	## round prices
 	df.line.fill = df.line.fill %>% mutate(price=round(price, digits=0))
+
+
+################
+# C. Visualize #
+################
+
+### functions for strip labels
+	lab.price = as_labeller(function(x) { paste("$", x, "/t", sep="") })
+	lab.incid = as_labeller(function(x) { paste(x, "%", sep="") })
 
 ### individual facets
 	plot.1.conv = df.pt %>% filter(production == "conventional") %>% mutate(price=round(price, digits=0)) %>% {
