@@ -235,31 +235,33 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 ### individual facets
 	plot.1.conv = df.pt %>% filter(production == "conventional") %>% mutate(price=round(price, digits=0)) %>% {
 	ggplot(.) +
-		geom_line(size=0.6, aes(x=yield_base, y=cost_net, linetype=treatment)) +
+		geom_line(size=0.7, aes(x=yield_base, y=cost_net, linetype=treatment)) +
 		geom_ribbon(data={ df.line.fill %>% filter(production == "conventional") }, aes(x=yield, ymin=cost_min, ymax=cost_max, fill=group), alpha=0.4) +
 		facet_grid(incid_nongraft ~ price, labeller=labeller(price=lab.price, incid_nongraft=lab.incid)) +
 		scale_x_continuous(breaks=c(93,123,153), minor_breaks=c(103,113,133,143)) +
+		scale_y_continuous(breaks=c(-1000,-4000,-7000,-10000), minor_breaks=c(-2000,-3000,-5000,-6000,-8000,-9000)) +
 		theme_bw() +
-		theme(axis.title=element_text(size=12), axis.text=element_text(size=10), strip.text=element_text(size=12)) +
+		theme(axis.title=element_text(size=12), axis.text=element_text(size=11), strip.text=element_text(size=12)) +
 		theme(axis.title.x=element_text(margin=margin(7.5,0,-5,0)), axis.title.y=element_text(margin=margin(0,7.5,0,0))) +
 		theme(legend.position="bottom", legend.box="vertical", legend.margin=margin(0,0,0,0), legend.text=element_text(size=11)) +
-		guides(linetype=guide_legend(order=0), fill=guide_legend(order=1)) +
-		labs(x="Yield (tonnes [t]/hectare)", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
+		guides(linetype=guide_legend(order=1), fill=guide_legend(order=0)) +
+		labs(x="Yield (tonne/hectare [t/ha])", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
 	}
 	ggplot2::ggsave(file="./4_results/rolfsii_budget_facet_conv.png", device="png", plot=plot.1.conv, width=6.5, height=6.5, units="in")
 
 	plot.1.org = df.pt %>% filter(production == "organic") %>% mutate(price=round(price, digits=0))  %>% {
 	ggplot(.) +
-		geom_line(size=0.6, aes(x=yield_base, y=cost_net, linetype=treatment)) +
+		geom_line(size=0.7, aes(x=yield_base, y=cost_net, linetype=treatment)) +
 		geom_ribbon(data={ df.line.fill %>% filter(production == "organic") }, aes(x=yield, ymin=cost_min, ymax=cost_max, fill=group), alpha=0.4) +
 		facet_grid(incid_nongraft ~ price, labeller=labeller(price=lab.price, incid_nongraft=lab.incid)) +
 		scale_x_continuous(breaks=c(93,123,153), minor_breaks=c(103,113,133,143)) +
+		scale_y_continuous(breaks=c(-1000,-4000,-7000,-10000), minor_breaks=c(-2000,-3000,-5000,-6000,-8000,-9000,-11000,-12000)) +
 		theme_bw() +
-		theme(axis.title=element_text(size=12), axis.text=element_text(size=10), strip.text=element_text(size=12)) +
+		theme(axis.title=element_text(size=12), axis.text=element_text(size=11), strip.text=element_text(size=12)) +
 		theme(axis.title.x=element_text(margin=margin(7.5,0,-5,0)), axis.title.y=element_text(margin=margin(0,7.5,0,0))) +
 		theme(legend.position="bottom", legend.box="vertical", legend.margin=margin(0,0,0,0), legend.text=element_text(size=11)) +
-		guides(linetype=guide_legend(order=0), fill=guide_legend(order=1)) +
-		labs(x="Yield (tonnes [t]/hectare)", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
+		guides(linetype=guide_legend(order=1), fill=guide_legend(order=0)) +
+		labs(x="Yield (tonne/hectare [t/ha])", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
 	}
 	ggplot2::ggsave(file="./4_results/rolfsii_budget_facet_org.png", device="png", plot=plot.1.org, width=6.5, height=6.5, units="in")
 		
