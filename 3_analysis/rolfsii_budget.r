@@ -32,9 +32,10 @@ conflict_prefer("spread", "tidyr")
 setwd("/home/tomato_graft_rolfsii/")
 
 
-##########################
+#####################
 # A. Make Dataframe #
-##########################
+#####################
+
 ### make dataframe
 	## set vectors
 	production = c("conventional","organic")
@@ -98,7 +99,12 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 	
 	## remove paper example
 	df.pt = df.pt %>% filter(!(incid_nongraft == 20.3))
-	
+
+
+######################
+# B. Calculate Lines #
+######################
+
 ### calculate line equations
 	## remove unneeded columns
 	df.line = df.pt %>% 
@@ -143,12 +149,52 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 		# y
 		df.line = df.line %>% mutate(break_cost = (graft_m * break_yield) + graft_b )
 
-### summarize
-	df.line %>% filter(break_yield < 163.68) %>% arrange(production, incid_nongraft, price) %>% print(n=Inf)
+
+################
+# C. Summarize #
+################
+
+### points
+	## calculate graft-nongraft gap
+		# remove unneeded columns
+		summ.gap = df.pt %>% select(production, incid_nongraft, price, yield_base, treatment, cost_net)
+		
+		# spread
+		summ.gap = summ.gap %>% spread(key=treatment, value=cost_net)
+		
+		# calculate
+		summ.gap = summ.gap %>% mutate(diff_graft_nongraft=graft-nongraft)
+		
+		# remove NA rows
+		summ.gap = summ.gap %>% filter(!is.na(nongraft))
+		
+	## show
+	summ.gap %>% filter(
+		(production == "conventional" & incid_nongraft == 40 & price == 152.08) |
+		(production == "organic" & incid_nongraft == 40 & price == 181.83) 
+		)
+
+### lines
+	## remove unneeded columns and sort
+	summ.line = df.line %>% 
+		select(production, incid_nongraft, price, break_yield, break_cost) %>%
+		arrange(production, incid_nongraft, price)
+	
+	## show only yield below max yield evaluated
+	summ.line %>% filter(break_yield <= 163.68) %>% print(n=Inf)
+	
+	## export
+		# round
+		summ.line.exp = summ.line %>% mutate(
+			price=round(price, digits=2),
+			break_yield=round(break_yield, digits=1),
+			break_cost=round(break_cost, digits=0) )
+			
+	write_csv(summ.line.exp, file="./4_results/rolfsii_budget_breakeven-points.csv", col_names=T, append=F, na="NA")
 	
 	
 ##########################
-# B. Visualize - Prepare #
+# D. Visualize - Prepare #
 ##########################
 
 ### functions for strip labels
@@ -235,7 +281,7 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 
 
 ################
-# C. Visualize #
+# E. Visualize #
 ################
 
 ### functions for strip labels
@@ -255,7 +301,7 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 		theme(axis.title.x=element_text(margin=margin(7.5,0,-5,0)), axis.title.y=element_text(margin=margin(0,7.5,0,0))) +
 		theme(legend.position="bottom", legend.box="vertical", legend.margin=margin(0,0,0,0), legend.text=element_text(size=11)) +
 		guides(linetype=guide_legend(order=1), fill=guide_legend(order=0)) +
-		labs(x="Yield (tonne/hectare [t/ha])", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
+		labs(x="Yield (tonne/hectare [t/ha])", y="Net returns over analyzed costs ($/ha)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
 	}
 	ggplot2::ggsave(file="./4_results/rolfsii_budget_facet_conv.png", device="png", plot=plot.1.conv, width=6.5, height=6.5, units="in")
 
@@ -271,7 +317,7 @@ df.pt %>% filter(yield_base == 109.87 & price == 152.08 & (
 		theme(axis.title.x=element_text(margin=margin(7.5,0,-5,0)), axis.title.y=element_text(margin=margin(0,7.5,0,0))) +
 		theme(legend.position="bottom", legend.box="vertical", legend.margin=margin(0,0,0,0), legend.text=element_text(size=11)) +
 		guides(linetype=guide_legend(order=1), fill=guide_legend(order=0)) +
-		labs(x="Yield (tonne/hectare [t/ha])", y="Net returns over analyzed costs ($)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
+		labs(x="Yield (tonne/hectare [t/ha])", y="Net returns over analyzed costs ($/ha)", linetype="Transplants", fill="Returns higher in\ngrafted vs. nongrafted")
 	}
 	ggplot2::ggsave(file="./4_results/rolfsii_budget_facet_org.png", device="png", plot=plot.1.org, width=6.5, height=6.5, units="in")
 		
