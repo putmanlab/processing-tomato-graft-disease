@@ -18,12 +18,6 @@ library(stringr)
 library(tidyr)
 library(RColorBrewer)
 
-
-# install ggpattern for bar fill patterns
-	# does not work due to missing library for dependency package 'units'
-#devtools::install_version("ggpattern", version="0.4.1", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
-#library(ggpattern)
-
 conflict_prefer("date", "lubridate")
 conflict_prefer("filter", "dplyr")
 conflict_prefer("lag", "dplyr")

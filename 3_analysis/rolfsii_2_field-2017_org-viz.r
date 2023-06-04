@@ -5,6 +5,11 @@
 
 ## built on Docker putmanlab/exploratory-analysis:0.1.1
 
+if (!require(conflicted)) {
+  install.packages("conflicted")
+}
+library(conflicted)
+
 library(ggplot2)
 library(dplyr)
 library(lubridate)
@@ -14,8 +19,15 @@ library(tidyr)
 library(egg)
 
 ## install epifitter for audps; installed from github because not available on CRAN for R 3.5; ref 00af96a is last commit (on 2021-06-14) as of 2022-05-12
+	# install dependencies
+	install.packages(c("deSolve","DescTools","minpack.lm"), dependencies=FALSE, repos="https://cran.r-project.org/")
 devtools::install_github("AlvesKS/epifitter", ref="00af96a")
 library(epifitter)
+
+conflict_prefer("date", "lubridate")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+conflict_prefer("spread", "tidyr")
 
 directory="/home/tomato_graft_rolfsii"
 setwd(directory)

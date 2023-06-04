@@ -3,7 +3,12 @@
 # Experiment 1: Greenhouse - 2017            #
 ##############################################
 
-## built on Docker putmanlab/exploratory-analysis:0.1.1
+## built on Docker rocker/tidyverse:4.2.0
+
+if (!require(conflicted)) {
+  install.packages("conflicted")
+}
+library(conflicted)
 
 library(ggplot2)
 library(lubridate)
@@ -11,6 +16,11 @@ library(dplyr)
 library(readr)
 library(stringr)
 library(tidyr)
+
+conflict_prefer("date", "lubridate")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+conflict_prefer("spread", "tidyr")
 
 setwd("/home/tomato_graft_rolfsii")
 
@@ -36,7 +46,7 @@ setwd("/home/tomato_graft_rolfsii")
 	e1r1.dis = e1r1.dis.t %>% select(cultivar, graft, inoculum, block, date, days_after_plant, disease_severity)
 
 ### export final QC'd data	
-	write_csv(e1r1.dis, path="./2_data_curated/rolfsii_1_graft-greenhouse-2017_disease-serverity_final.csv", na=".", col_names=T, append=F)
+	write_csv(e1r1.dis, file="./2_data_curated/rolfsii_1_graft-greenhouse-2017_disease-serverity_final.csv", na=".", col_names=T, append=F)
 
 
 ###########
@@ -53,9 +63,11 @@ setwd("/home/tomato_graft_rolfsii")
 		scale_fill_brewer(palette="YlOrRd") +
 		theme_bw() +
 		theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-		theme(axis.title=element_text(size=14), axis.text=element_text(size=11), strip.text=element_text(size=14)) +
-		theme(legend.position="bottom", legend.title=element_text(size=14), legend.text=element_text(size=12)) +
+		theme(axis.text=element_text(size=11), strip.text=element_text(size=14)) +
+		theme(axis.title.x=element_text(size=14, margin=margin(t=5)), axis.title.y=element_text(size=14, margin=margin(r=5)) ) + 
+		theme(legend.position="bottom", legend.title=element_text(size=14), legend.text=element_text(size=12, margin=margin(l=-5, r=-2)) ) +
 		guides(fill=guide_legend(nrow=1)) +
 		labs(x="Days after transplant", y="Number of replicate plants", fill="Southern blight severity (0–8)")
 	}
 	ggplot2::ggsave(file="./4_results/rolfsii_1_graft-gh-2017_severity_bar.png", device="png", plot=plot.severity.stack, width=6.5, height=6.5, units="in")
+	ggplot2::ggsave(file="./4_results/Solares_tomato-grafting_PlantDis_fig-1.tiff", device="tiff", plot=plot.severity.stack, width=6.5, height=6.5, units="in", dpi=500, compression="lzw")
