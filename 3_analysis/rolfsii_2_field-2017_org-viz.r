@@ -3,9 +3,9 @@
 # Experiment 2: Field - 2017                 #
 ##############################################
 
-## built on Docker putmanlab/exploratory-analysis:0.1.1
+## built on Docker rocker/tidyverse:4.2.0
 
-if (!require(conflicted)) {
+if (!requireNamespace("conflicted", quietly=TRUE)) {
   install.packages("conflicted")
 }
 library(conflicted)
@@ -16,28 +16,34 @@ library(lubridate)
 library(readr)
 library(stringr)
 library(tidyr)
+
+devtools::install_version("gridExtra", version="2.3", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
+devtools::install_version("egg", version="0.4.5", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
 library(egg)
 
 ## install epifitter for audps; installed from github because not available on CRAN for R 3.5; ref 00af96a is last commit (on 2021-06-14) as of 2022-05-12
 	# install dependencies
-	install.packages(c("deSolve","DescTools","minpack.lm"), dependencies=FALSE, repos="https://cran.r-project.org/")
-devtools::install_github("AlvesKS/epifitter", ref="00af96a")
-library(epifitter)
+#	devtools::install_version("deSolve", version="1.35", repos="https://cran.r-project.org/", dependencies=FALSE, upgrade="never")
+#	devtools::install_version("DescTools", version="0.99.49", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
+#	devtools::install_version("minpack.lm", version="1.2-3", repos="https://cran.r-project.org/", dependencies=FALSE, upgrade="never")
+	
+#devtools::install_github("AlvesKS/epifitter", ref="00af96a", dependencies=FALSE, upgrade_dependencies=FALSE)
+#library(epifitter)
 
 conflict_prefer("date", "lubridate")
 conflict_prefer("filter", "dplyr")
 conflict_prefer("lag", "dplyr")
 conflict_prefer("spread", "tidyr")
 
-directory="/home/tomato_graft_rolfsii"
-setwd(directory)
+setwd("/home/tomato_graft_rolfsii")
+
 
 ##################################
 # A. Import and Organize - Yield #
 ##################################
 
 ## get data
-in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Blight Harvest Data 2017.csv", sep=""), col_names=T)
+in.e2.yld = read_csv(file="./2_data/graft-rolfsii_LB Southern Blight Harvest Data 2017.csv", col_names=T)
 
 ## clean up df
 	# rename columns
@@ -72,7 +78,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	e2.yld.exp = e2.yld %>% select(-plant_factor, -plant_label)
 
 	# export		
-	write_csv(e2.yld.exp, path="./2_data_curated/rolfsii_2_field-2017_yield_final.csv", na=".", col_names=T, append=F)
+	write_csv(e2.yld.exp, file="./2_data_curated/rolfsii_2_field-2017_yield_final.csv", na=".", col_names=T, append=F)
 
 
 ######################################
@@ -81,12 +87,9 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 
 ## incidence data
 	# get data
-	in.e2.incid = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB grafted trial 2017.csv", sep=""), col_names=T)
-
-	# rename columns
-	e2.incid.t = in.e2.incid %>% rename(date_=X1, subplot=X2)
+	in.e2.incid = read_csv(file="./2_data/graft-rolfsii_LB grafted trial 2017.csv", col_names=T)
 	# convert date column
-	e2.incid.t = e2.incid.t %>% mutate(date=mdy(date_)) %>% select(-date_)
+	e2.incid.t = in.e2.incid %>% mutate(date=mdy(date_)) %>% select(-date_)
 	# convert to long format
 	e2.incid.t = e2.incid.t %>% gather(key="bed", value="disease_incidence", -date, -subplot)
 	# convert bed to integer
@@ -96,11 +99,11 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	
 ## plot plan
 	# import
-	in.e2.map = read_csv(file=paste(directory, "/1_methods/graft-rolfsii_LB grafted trial 2017_plot-map.csv", sep=""), col_names=T)
-	in.e2.blocks = read_csv(file=paste(directory, "/1_methods/graft-rolfsii_LB grafted trial 2017_blocks.csv", sep=""), col_names=T)
+	in.e2.map = read_csv(file="./1_methods/graft-rolfsii_LB grafted trial 2017_plot-map.csv", col_names=T)
+	in.e2.blocks = read_csv(file="./1_methods/graft-rolfsii_LB grafted trial 2017_blocks.csv", col_names=T)
 
 	# rename columns and remove NAs rows and columns
-	e2.map.t = in.e2.map %>% rename(half=X1) %>% filter(!is.na(half)) %>% select(-X2, -X7, -X12, -X17)
+	e2.map.t = in.e2.map %>% filter(!is.na(half)) %>% select(-x1, -x2, -x3, -x4)
 	# convert to long format and remove NAs
 	e2.map.t = e2.map.t %>% gather(key="bed", value="trt_letter", -half) %>% filter(!is.na(trt_letter))
 	# convert bed to integer
@@ -151,7 +154,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	e2.incid.f = e2.incid.f %>% mutate(perc_incid=round( ((disease_incidence / n_plants)*100), digits=1))
 	
 ## export curated data object
-	write_csv(e2.incid.f, path="./2_data_curated/rolfsii_2_field-2017_disease-incidence_final.csv", na=".", col_names=T, append=F)
+	write_csv(e2.incid.f, file="./2_data_curated/rolfsii_2_field-2017_disease-incidence_final.csv", na=".", col_names=T, append=F)
 
 
 #########################
@@ -166,7 +169,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	e2.summ.graft = e2.summ.graft %>% spread(key=date, value=incid_mean)
 
 	## export
-	write_csv(e2.summ.graft, path="./4_results/rolfsii_2_field-2017_incidence_summ-table_SB_graft-date.csv", na="NA", col_names=T, append=F)
+	write_csv(e2.summ.graft, file="./4_results/rolfsii_2_field-2017_incidence_summ-table_SB_graft-date.csv", na="NA", col_names=T, append=F)
 
 ### subplots - rating date 
 	# summarize
@@ -176,7 +179,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	e2.summ.subplot = e2.summ.subplot %>% arrange(date, cultivar, graft)
 	
 	# export
-	write_csv(e2.summ.subplot, path="./4_results/rolfsii_2_field-2017_incidence_summ-table_SB_cultivar-graft_min-max.csv", na="NA", append=F, col_names=T)
+	write_csv(e2.summ.subplot, file="./4_results/rolfsii_2_field-2017_incidence_summ-table_SB_cultivar-graft_min-max.csv", na="NA", append=F, col_names=T)
 
 ### graft-cultivar - rating date (for figure)
 	## summarize
@@ -186,6 +189,11 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 ########################
 # D. Summarize - AUDPS #
 ########################
+
+### load audps functions
+	## AUDPS function copied from epifitter package as workaround to problem installing epifitter
+		# compile error with one of dependencies of an epifitter dependency
+	source("./3_analysis/epifitter_functions.r")
 
 ### calculate AUDPS
 	## arrange and group by
@@ -205,7 +213,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	## convert to proportion
 	e2.incid.s.out = e2.incid.s %>% mutate(raudps=raudps/100)
 
-	write_csv(e2.incid.s.out, path="./2_data_curated/rolfsii_2_field-2017_disease-incidence_audps_final.csv", na=".", col_names=T, append=F)
+	write_csv(e2.incid.s.out, file="./2_data_curated/rolfsii_2_field-2017_disease-incidence_audps_final.csv", na=".", col_names=T, append=F)
 	
 	
 ###########
@@ -224,7 +232,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 		theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
 		theme(axis.title=element_text(size=12), axis.text=element_text(size=10)) +
 		theme(strip.text=element_blank(), strip.background=element_blank()) +
-		theme(legend.position=c(0.22, 0.92)) +
+		theme(legend.position=c(0.25, 0.92), legend.background=element_rect(fill=NA) ) +
 		guides(color=guide_legend(nrow=1), linetype=guide_legend(nrow=1)) +
 		labs(y="Southern blight strikes (%)", x="Date", color="Graft", linetype="Graft")
 
@@ -234,7 +242,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 		geom_text(data=e2.summ.audps.fig, aes(x=graft, y=raudps_mean, label=raudps_mean), hjust=-0.75) +
 		facet_grid(cultivar ~ ., labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 		scale_x_discrete(labels=c("Maxifort","none")) + 
-		stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
+		stat_summary(fun=mean, fun.min=mean, fun.max=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
 		theme_bw() +
 		theme(axis.title=element_text(size=12), axis.text=element_text(size=10)) +
 		labs(y="Relative area under disease progress stairs (% strikes)", x="Graft")
@@ -242,6 +250,7 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 	plot.e2.comb = ggarrange(plot.e2.incid, plot.e2.audps, widths=c(3.5,1.5))
 	
 	ggplot2::ggsave(file="./4_results/rolfsii_2_field-2017_disease_incid-audps.png", device="png", plot=plot.e2.comb, width=6.5, height=5, units="in")
+	ggplot2::ggsave(file="./4_results/Solares_tomato-grafting_PlantDis_fig-2.tiff", device="tiff", plot=plot.e2.comb, width=6.5, height=5, units="in", dpi=500, compression="lzw")
 	
 
 ### yield - graft (FOR PAPER)
@@ -250,10 +259,11 @@ in.e2.yld = read_csv(file=paste(directory, "/2_data/graft-rolfsii_LB Southern Bl
 #		geom_line(aes(group=interaction(cultivar,block))) +
 		geom_text(data=e2.yld.avg, aes(x=graft, y=yield_mt_mean, label=yield_mt_mean), hjust=-0.75) +
 		scale_x_discrete(labels=c("Maxifort","none")) +
-		stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.25, width=0.25) +
+		stat_summary(fun=mean, fun.min=mean, fun.max=mean, geom="crossbar", size=0.25, width=0.25) +
 		theme_bw() +
 		theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="grey", size=0.2), legend.text=element_text(size=8)) +
 		theme(axis.title.x=element_text(size=12), axis.title.y=element_text(size=12), axis.text.x=element_text(size=10), axis.text.y=element_text(size=10)) +
 		labs(y="Yield (metric ton/hectare)", x="Graft")
-	ggsave(file=paste(directory, "/4_results/rolfsii_2_field-2017_yield_dot.png", sep=""), device="png", plot=plot.e2.yld.dot, width=3, height=5, units="in")
+	ggsave(file="./4_results/rolfsii_2_field-2017_yield_dot.png", device="png", plot=plot.e2.yld.dot, width=3, height=5, units="in")
+	ggsave(file="./4_results/Solares_tomato-grafting_PlantDis_fig-3.tiff", device="tiff", plot=plot.e2.yld.dot, width=3, height=5, units="in", dpi=500, compression="lzw")
 
