@@ -21,15 +21,6 @@ devtools::install_version("gridExtra", version="2.3", repos="https://cran.r-proj
 devtools::install_version("egg", version="0.4.5", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
 library(egg)
 
-## install epifitter for audps; installed from github because not available on CRAN for R 3.5; ref 00af96a is last commit (on 2021-06-14) as of 2022-05-12
-	# install dependencies
-#	devtools::install_version("deSolve", version="1.35", repos="https://cran.r-project.org/", dependencies=FALSE, upgrade="never")
-#	devtools::install_version("DescTools", version="0.99.49", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
-#	devtools::install_version("minpack.lm", version="1.2-3", repos="https://cran.r-project.org/", dependencies=FALSE, upgrade="never")
-	
-#devtools::install_github("AlvesKS/epifitter", ref="00af96a", dependencies=FALSE, upgrade_dependencies=FALSE)
-#library(epifitter)
-
 conflict_prefer("date", "lubridate")
 conflict_prefer("filter", "dplyr")
 conflict_prefer("lag", "dplyr")
