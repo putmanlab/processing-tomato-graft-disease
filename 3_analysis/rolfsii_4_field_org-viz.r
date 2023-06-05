@@ -3,7 +3,12 @@
 # Experiment 4: Grafting - Field 	         #
 ##############################################
 
-## built on Docker putmanlab/exploratory-analysis:0.1.1
+## built on Docker rocker/tidyverse:4.2.0
+
+if (!requireNamespace("conflicted", quietly=TRUE)) {
+  install.packages("conflicted")
+}
+library(conflicted)
 
 library(ggplot2)
 library(lubridate)
@@ -11,15 +16,17 @@ library(dplyr)
 library(readr)
 library(stringr)
 library(tidyr)
-library(cowplot)
+
+devtools::install_version("gridExtra", version="2.3", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
+devtools::install_version("egg", version="0.4.5", repos="https://cran.r-project.org/", dependencies=c("Depends","Imports"), upgrade="never")
 library(egg)
 
-## install epifitter for audps; installed from github because not available on CRAN for R 3.5; ref 00af96a is last commit (on 2021-06-14) as of 2022-05-12
-devtools::install_github("AlvesKS/epifitter", ref="00af96a")
-library(epifitter)
+conflict_prefer("date", "lubridate")
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+conflict_prefer("spread", "tidyr")
 
-directory="/home/tomato_graft_rolfsii"
-setwd(directory)
+setwd("/home/tomato_graft_rolfsii")
 
 ## show more significant figures than dplyr default rounding place to check audps calculations against spreadsheet
 options(pillar.sigfig=4)
@@ -216,7 +223,7 @@ options(pillar.sigfig=4)
 
 ### manually curate rest of plants
 	## export
-	write_csv(e4r2.t.mod.out, path="./2_data/worksheets/rolfsii_4_field-2018_manually-curate-plant-ratings_output.csv", append=F, col_names=T, na="")
+	write_csv(e4r2.t.mod.out, file="./2_data/worksheets/rolfsii_4_field-2018_manually-curate-plant-ratings_output.csv", append=F, col_names=T, na="")
 
 	## import modified ratings
 	e4r2.t.mod.in = read_csv(file="./2_data/worksheets/rolfsii_4_field-2018_manually-curate-plant-ratings_input.csv", col_names=T, na="")
@@ -304,8 +311,8 @@ options(pillar.sigfig=4)
 #	data.e4.narm = data.e4 %>% filter(!is.na(rating))
 
 ### export
-	write_csv(data.e4, path="./2_data_curated/rolfsii_4_field_incidence_by-plant_final.csv", col_names=T, append=F, na="NA")
-#	write_csv(data.e4.narm, path="./2_data_curated/graft-rolfsii_4_field_incidence_for-SAS_missing-removed.csv", col_names=T, append=F, na="NA")
+	write_csv(data.e4, file="./2_data_curated/rolfsii_4_field_incidence_by-plant_final.csv", col_names=T, append=F, na="NA")
+#	write_csv(data.e4.narm, file="./2_data_curated/graft-rolfsii_4_field_incidence_for-SAS_missing-removed.csv", col_names=T, append=F, na="NA")
 
 	
 #######################
@@ -361,7 +368,7 @@ options(pillar.sigfig=4)
 		e4.summ.plot.export = e4.summ.plot.export %>% mutate(perc_incid=replace(perc_incid, perc_incid == "Inf", NA))		
 		
 		# export
-		write_csv(e4.summ.plot.export, path="./2_data_curated/rolfsii_4_field_incidence_by-plot_final.csv", na=".", append=F, col_names=T)
+		write_csv(e4.summ.plot.export, file="./2_data_curated/rolfsii_4_field_incidence_by-plot_final.csv", na=".", append=F, col_names=T)
 
 ### graft-cultivar - rating date (for figure)
 	## summarize; exclude last date in 2018
@@ -397,7 +404,7 @@ options(pillar.sigfig=4)
 	e4.summ.plot.dates = e4.summ.plot.dates %>% filter(!date %in% as_date("2018-08-10"))
 	
 	# export
-	write_csv(e4.summ.plot.dates, path="./4_results/rolfsii_4_field_incidence_summ-table_SB-CT_cultivar-graft_min-max.csv", na="NA", append=F, col_names=T)
+	write_csv(e4.summ.plot.dates, file="./4_results/rolfsii_4_field_incidence_summ-table_SB-CT_cultivar-graft_min-max.csv", na="NA", append=F, col_names=T)
 
 ### summarize by treatment, each date; ignore NA;
 	# calculate overall mean by summing counts then calculating % in second step; mean of means is not accurate due to different sample sizes
@@ -414,7 +421,7 @@ options(pillar.sigfig=4)
 			e4.summ.trt.perc = e4.summ.trt.perc %>% filter(rating %in% c("SB_T","CT_T","V_T")) %>% arrange(rating, cultivar, graft)
 
 		# export
-		write_csv(e4.summ.trt.perc, path="./4_results/rolfsii_4_field_incidence_summ-table_SB-CT-V_cultivar-graft_trt-dates.csv", na="NA", append=F, col_names=T)
+		write_csv(e4.summ.trt.perc, file="./4_results/rolfsii_4_field_incidence_summ-table_SB-CT-V_cultivar-graft_trt-dates.csv", na="NA", append=F, col_names=T)
 	
 ### graft only - overall mean (FOR PAPER)
 	# mean calculated by summing total number of plants affected and in plot across all blocks and cultivars
@@ -453,14 +460,19 @@ options(pillar.sigfig=4)
 		e4.summ.ct.cult.d17 = e4.summ.ct.cult.d17 %>% mutate(rating_avg_dates=round(rating_total/dates_ct, digits=1), plants_avg_dates=(plants_sum/dates_ct), incid_avg=round( (rating_total / plants_sum)*100, digits=1)) %>% ungroup()
 	
 ### export
-	write_csv(e4.summ.sb.graft.d127, path="./4_results/rolfsii_4_field_incidence_summ-table_SB_graft_d127_overall-mean.csv", na="NA", append=F, col_names=T)
-	write_csv(e4.summ.ct.graft.d17, path="./4_results/rolfsii_4_field_incidence_summ-table_CT_graft_d17_overall-mean.csv", na="NA", append=F, col_names=T)
-	write_csv(e4.summ.ct.cult.d17, path="./4_results/rolfsii_4_field_incidence_summ-table_CT_cult_d17_overall-mean.csv", na="NA", append=F, col_names=T)
+	write_csv(e4.summ.sb.graft.d127, file="./4_results/rolfsii_4_field_incidence_summ-table_SB_graft_d127_overall-mean.csv", na="NA", append=F, col_names=T)
+	write_csv(e4.summ.ct.graft.d17, file="./4_results/rolfsii_4_field_incidence_summ-table_CT_graft_d17_overall-mean.csv", na="NA", append=F, col_names=T)
+	write_csv(e4.summ.ct.cult.d17, file="./4_results/rolfsii_4_field_incidence_summ-table_CT_cult_d17_overall-mean.csv", na="NA", append=F, col_names=T)
 
 
 ########################
 # F. Summarize - AUDPS #
 ########################
+
+### load audps functions
+	## AUDPS function copied from epifitter package as workaround to problem installing epifitter
+		# compile error with one of dependencies of an epifitter dependency
+	source("./3_analysis/epifitter_functions.r")
 
 ### calculate AUDPS
 	## remove last rating date for 2018 per above 
@@ -501,57 +513,12 @@ options(pillar.sigfig=4)
 		e4.summ.audps.export = e4.summ.audps.export %>% mutate(raudps=replace(raudps, raudps == "NaN", NA))
 		
 		# export
-		write_csv(e4.summ.audps.export, path="./2_data_curated/rolfsii_4_field_audps_final.csv", na=".", append=F, col_names=T)
+		write_csv(e4.summ.audps.export, file="./2_data_curated/rolfsii_4_field_audps_final.csv", na=".", append=F, col_names=T)
 
 
 ################
 # G. Visualize #
 ################	
-
-#### SB_T (FOR PAPER)
-#	plot.e4.incid.sb = e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% {
-#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-#			geom_line(size=0.3) +
-#			facet_grid(exp_rep ~ cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-#			theme_bw() +
-#			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
-#			theme(legend.position="bottom") +
-#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-#			labs(x="Days After Planting", y="Southern blight incidence (%)", color="Graft", linetype="Graft")
-#		}
-#
-#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_sb_incid.png", device="png", plot=plot.e4.incid.sb, width=6, height=6, units="in")
-	
-#### SB_T - incidence + audps combined (FOR PAPER) 1_horizontal
-#	## incidence
-#	plot.e4.incid.sb.c = e4.summ.plot %>% filter(rating == "SB_T" & date != as_date("2018-08-10")) %>% {
-#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-#			geom_line(size=0.3) +
-#			facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-#			theme_bw() +
-#			theme(axis.title=element_text(size=11), axis.text=element_text(size=10), legend.text=element_text(size=10), strip.text=element_text(size=11)) +
-#			theme(legend.position="bottom", legend.margin=margin(t=-5)) +
-#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-#			theme(strip.text.y=element_blank()) +
-#			labs(x="Days After Planting", y="Southern blight incidence (%)", color="Graft", linetype="Graft")
-#		}
-#
-#	## audps
-#	plot.e4.audps.sb.c = e4.summ.audps %>% filter(rating == "SB_T") %>% {
-#		ggplot(., aes(y=raudps, x=graft)) +
-#			geom_point(shape=1, position=position_jitter(w=0.1, h=0)) +
-##			geom_text(data={e4.summ.audps.fig %>% filter(rating == "SB_T")}, aes(x=graft, y=raudps_mean, label=raudps_mean), hjust=-0.3, size=3) +
-#			facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-#			stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
-#			theme_bw() +
-#			theme(axis.title=element_text(size=11), axis.text.y=element_text(size=10), strip.text=element_text(size=11)) +
-#			theme(axis.text.x=element_text(size=10, angle=45, vjust=1, hjust=1)) +
-#			labs(y="Relative area under disease progress stairs (% incidence)", x="Graft")
-#		}
-#		
-#	plot.e4.sb.comb = ggarrange(plot.e4.incid.sb.c, plot.e4.audps.sb.c, widths=c(3.5,1.5))
-#	
-#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_sb_incid-audps.png", device="png", plot=plot.e4.sb.comb, width=6.5, height=5, units="in")
 
 ### SB_T - incidence + audps combined (FOR PAPER) 2_vertical
 	## incidence
@@ -561,7 +528,8 @@ options(pillar.sigfig=4)
 			geom_line(data={e4.summ.incid.fig %>% filter(rating == "SB_T")}, aes(x=days_after_plant, y=incid_mean), size=1.1) +
 			facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 			theme_bw() +
-			theme(axis.title=element_text(size=12), axis.text=element_text(size=11), legend.text=element_text(size=11), strip.text=element_text(size=12)) +
+			theme(axis.title.x=element_text(size=12, margin=margin(t=5)), axis.title.y=element_text(size=12, margin=margin(r=7.5)) ) +
+			theme(axis.text=element_text(size=11), legend.text=element_text(size=11), strip.text=element_text(size=12) ) +
 			theme(legend.position="bottom", legend.margin=margin(t=-5)) +
 			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
 			labs(x="Days After Planting", y="Southern blight incidence (%)", color="Graft", linetype="Graft")
@@ -574,62 +542,17 @@ options(pillar.sigfig=4)
 			geom_text(data={e4.summ.audps.fig %>% filter(rating == "SB_T")}, aes(x=graft, y=raudps_mean, label=format(round(raudps_mean, digits=2), nsmall=1)), hjust=-0.25, vjust=-0.15, size=3) +
 			facet_grid(. ~ exp_rep + cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 			scale_x_discrete(labels=c("none","stan-\ndard","tall")) +
-			stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.35, color="red") +
+			stat_summary(fun=mean, fun.min=mean, fun.max=mean, geom="crossbar", size=0.3, width=0.35, color="red") +
 			theme_bw() +
-			theme(axis.title=element_text(size=12), axis.text=element_text(size=11), strip.text=element_text(size=12)) +
+			theme(axis.title.x=element_text(size=12, margin=margin(t=5)), axis.title.y=element_text(size=12, margin=margin(r=7.5)) ) +
+			theme(axis.text=element_text(size=11), strip.text=element_text(size=12)) +
 			labs(y="Relative area under disease\nprogress stairs (%)", x="Graft")
 		}
 		
 	plot.e4.sb.comb.2 = ggarrange(plot.e4.incid.sb.c2, plot.e4.audps.sb.c2, ncol=1, heights=c(5,2))
 	
 	ggplot2::ggsave(file="./4_results/rolfsii_4_field_sb_incid-audps_vert.png", device="png", plot=plot.e4.sb.comb.2, width=6.5, height=7, units="in")
-
-
-#### CT_T (FOR PAPER)
-#	plot.e4.incid.ct = e4.summ.plot %>% filter(rating == "CT_T" & date != as_date("2018-08-10")) %>% {
-#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-#			geom_line(size=0.3) +
-#			facet_grid(exp_rep ~ cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-#			theme_bw() +
-#			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
-#			theme(legend.position="bottom") +
-#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-#			labs(x="Days After Planting", y="Curly Top incidence (%)", color="Graft", linetype="Graft")
-#		}
-#
-#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_ct_incid.png", device="png", plot=plot.e4.incid.ct, width=6, height=6, units="in")
-
-#### CT_T - incidence + audps combined (FOR PAPER)
-#	## incidence
-#	plot.e4.incid.ct.c = e4.summ.plot %>% filter(rating == "CT_T" & date != as_date("2018-08-10")) %>% {
-#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-#			geom_line(size=0.3) +
-#			facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-#			theme_bw() +
-#			theme(axis.title=element_text(size=11), axis.text=element_text(size=10), legend.text=element_text(size=10), strip.text=element_text(size=11)) +
-#			theme(legend.position="bottom", legend.margin=margin(t=-5)) +
-#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-#			theme(strip.text.y=element_blank()) +
-#			labs(x="Days After Planting", y="Curly top incidence (%)", color="Graft", linetype="Graft")
-#		}
-#
-#	## audps
-#	plot.e4.audps.ct.c = e4.summ.audps %>% filter(rating == "CT_T") %>% {
-#		ggplot(., aes(y=raudps, x=graft)) +
-#			geom_point(shape=1, position=position_jitter(w=0.1, h=0)) +
-##			geom_text(data={e4.summ.audps.fig %>% filter(rating == "SB_T")}, aes(x=graft, y=raudps_mean, label=raudps_mean), hjust=-0.3, size=3) +
-#			facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-#			stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
-#			theme_bw() +
-#			theme(axis.title=element_text(size=11), axis.text.y=element_text(size=10), strip.text=element_text(size=11)) +
-#			theme(axis.text.x=element_text(size=10, angle=45, vjust=1, hjust=1)) +
-#			labs(y="Relative area under disease progress stairs (% incidence)", x="Graft")
-#		}
-#		
-#	plot.e4.ct.comb = ggarrange(plot.e4.incid.ct.c, plot.e4.audps.ct.c, widths=c(3.5,1.5))
-#	
-#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_ct_incid-audps.png", device="png", plot=plot.e4.ct.comb, width=6.5, height=5, units="in")
-
+	ggplot2::ggsave(file="./4_results/Solares_tomato-grafting_PlantDis_fig-4.tiff", device="tiff", plot=plot.e4.sb.comb.2, width=6.5, height=7, units="in", dpi=500, compression="lzw")
 
 ### CT_T - incidence + audps combined (FOR PAPER) 2_vertical
 	## incidence
@@ -652,7 +575,7 @@ options(pillar.sigfig=4)
 			geom_text(data={e4.summ.audps.fig %>% filter(rating == "CT_T")}, aes(x=graft, y=raudps_mean, label=format(round(raudps_mean, digits=2), nsmall=1)), hjust=-0.25, vjust=-0.15, size=3) +
 			facet_grid(. ~ exp_rep + cultivar, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
 			scale_x_discrete(labels=c("none","stan-\ndard","tall")) +
-			stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.35, color="red") +
+			stat_summary(fun=mean, fun.min=mean, fun.max=mean, geom="crossbar", size=0.3, width=0.35, color="red") +
 			theme_bw() +
 			theme(axis.title=element_text(size=12), axis.text=element_text(size=11), strip.text=element_text(size=12)) +
 			labs(y="Relative area under disease\nprogress stairs (%)", x="Graft")
@@ -661,21 +584,6 @@ options(pillar.sigfig=4)
 	plot.e4.ct.comb.2 = ggarrange(plot.e4.incid.ct.c2, plot.e4.audps.ct.c2, ncol=1, heights=c(5,2))
 	
 	ggplot2::ggsave(file="./4_results/rolfsii_4_field_ct_incid-audps_vert.png", device="png", plot=plot.e4.ct.comb.2, width=6.5, height=7, units="in")
-
-	
-#### O_T, V_T (FOR PAPER)
-#	plot.e4.incid.ov = e4.summ.plot %>% filter(rating %in% c("O_T","V_T") & date != as_date("2018-08-10")) %>% {
-#		ggplot(., aes(x=days_after_plant, y=perc_incid, color=graft, linetype=graft, group=interaction(block, graft, cultivar))) +
-#			geom_line(size=0.3) +
-#			facet_grid(exp_rep ~ rating + cultivar, labeller=labeller(rating=c(O_T="Other", V_T="Unknown Virus"), cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-#			theme_bw() +
-#			theme(axis.text=element_text(size=12), legend.text=element_text(size=12), strip.text=element_text(size=12)) +
-#			theme(legend.position="bottom") +
-#			theme(panel.grid=element_blank(), panel.grid.major.y=element_line(color="light grey", size=0.15), panel.grid.major.x=element_line(color="light grey", size=0.15)) +
-#			labs(x="Days After Planting", y="Incidence (%)", color="Graft", linetype="Graft")
-#		}
-#
-#	ggplot2::ggsave(file="./4_results/rolfsii_4_field_incidence_oth-vir.png", device="png", plot=plot.e4.incid.ov, width=8, height=6, units="in")
 
 ### O_T, V_T - incidence + audps horizontally, O_T and V_T vertically (FOR PAPER) 
 	### O_T
@@ -698,7 +606,7 @@ options(pillar.sigfig=4)
 			ggplot(., aes(y=raudps, x=graft)) +
 				geom_point(shape=1, position=position_jitter(w=0.1, h=0)) +
 				facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-				stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
+				stat_summary(fun=mean, fun.min=mean, fun.max=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
 				theme_bw() +
 				theme(axis.title=element_text(size=11), axis.text.y=element_text(size=10), strip.text=element_text(size=11)) +
 				theme(axis.text.x=element_text(size=10, angle=45, vjust=1, hjust=1)) +
@@ -725,7 +633,7 @@ options(pillar.sigfig=4)
 			ggplot(., aes(y=raudps, x=graft)) +
 				geom_point(shape=1, position=position_jitter(w=0.1, h=0)) +
 				facet_grid(cultivar ~ exp_rep, labeller=labeller(cultivar=c("5608"="HZ 5608", "8504"="HZ 8504"))) +
-				stat_summary(fun.y=mean, fun.ymin=mean, fun.ymax=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
+				stat_summary(fun=mean, fun.min=mean, fun.max=mean, geom="crossbar", size=0.3, width=0.4, color="red") +
 				theme_bw() +
 				theme(axis.title=element_text(size=11), axis.text.y=element_text(size=10), strip.text=element_text(size=11)) +
 				theme(axis.text.x=element_text(size=10, angle=45, vjust=1, hjust=1)) +
