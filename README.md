@@ -1,10 +1,6 @@
 # processing-tomato-graft-disease
 
-Contains code for processing, visualizing, and analyzing data in manuscript submitted for publication:
+Contains code for processing, visualizing, and analyzing data in:
 
-Evaluation of Grafting for Management of Southern Blight in Processing Tomatoes in California
+Solares, Natalie, Joe J. Nunez, and Alexander I. Putman. 2023. Evaluation of grafting for management of southern blight in processing tomatoes in California. Plant Disease 107(12):3913-3923. doi:[10.1094/PDIS-10-22-2445-RE](https://doi.org/10.1094/PDIS-10-22-2445-RE)
  
-Natalie Solares1, Joe Nunez2, and Alexander I. Putman1,*  
-
-1	Department of Microbiology and Plant Pathology, University of California, Riverside, Riverside, CA 92521 USA
-2 	University of California Cooperative Extension Kern County, Bakersfield, CA 93307 USA
